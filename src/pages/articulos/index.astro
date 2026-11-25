@@ -1,0 +1,90 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const articles = (await getCollection('articulos', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+<BaseLayout title="Artículos — dajomar" description="Artículos sobre Linux, redes, contenedores, seguridad y homelab.">
+  <div class="content-width" style="padding-top: 40px; padding-bottom: 72px;">
+    <h1 class="page-title">Artículos</h1>
+    {articles.length === 0 && <p class="empty">Los artículos están en camino. Mientras tanto, revisa los <a href="/recursos/">cheat sheets</a>.</p>}
+    <div class="articles-list">
+      {articles.map(a => (
+        <a href={`/articulos/${a.id}/`} class="article-row">
+          <span class="article-date">{a.data.date.toLocaleDateString('es', { month: 'short', year: 'numeric' })}</span>
+          <span class="article-info">
+            <span class="article-title">{a.data.title}</span>
+            <span class="article-desc">{a.data.description}</span>
+            <span class="article-tags">
+              {a.data.tags.map(tag => <span class="dj-tag">{tag}</span>)}
+            </span>
+          </span>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-title {
+    font-size: 34px;
+    line-height: 40px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0 0 var(--space-6);
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--line);
+  }
+  .empty {
+    color: var(--ink-muted);
+    font-size: 17px;
+  }
+  .articles-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .article-row {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 4px var(--space-6);
+    padding: 20px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .article-row:hover {
+    background: var(--surface-muted);
+  }
+  .article-date {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 26px;
+    color: var(--ink-muted);
+  }
+  .article-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .article-title {
+    font-size: 19px;
+    line-height: 26px;
+    font-weight: 700;
+  }
+  .article-desc {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--ink-muted);
+  }
+  .article-tags {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .article-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../config';
+---
+<BaseLayout title="Sobre mí — dajomar" description={`Sobre ${SITE.author}, autor de dajomar.`}>
+  <div class="content-width" style="padding-top: 40px; padding-bottom: 72px;">
+    <h1 class="page-title">Sobre mí</h1>
+    <p>[ESCRIBIR]</p>
+    <p>Más en <a href={SITE.personalSite}>{SITE.personalSite.replace('https://', '')}</a>.</p>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-title {
+    font-size: 34px;
+    line-height: 40px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0 0 var(--space-6);
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--line);
+  }
+</style>

@@ -1,0 +1,209 @@
+---
+---
+<div class="search-wrapper" id="search-wrapper">
+  <button type="button" class="dj-search" id="search-trigger" aria-label="Buscar">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+    <span>buscar /</span>
+  </button>
+  <div class="search-overlay" id="search-overlay" role="dialog" aria-label="Buscar" aria-modal="true" hidden>
+    <div class="search-dialog">
+      <div class="search-input-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <input type="search" id="search-input" placeholder="Buscar comando, tema o herramienta..." autocomplete="off" aria-label="Buscar" />
+        <kbd>Esc</kbd>
+      </div>
+      <div id="search-results" class="search-results"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .search-wrapper {
+    position: relative;
+  }
+  .dj-search {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 10vh var(--space-4) var(--space-4);
+  }
+  .search-overlay[hidden] {
+    display: none;
+  }
+  .search-dialog {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    width: 100%;
+    max-width: 560px;
+    max-height: 70vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+  .search-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--line);
+  }
+  .search-input-wrap svg {
+    flex-shrink: 0;
+    color: var(--ink-muted);
+  }
+  #search-input {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 16px;
+    color: var(--ink);
+    outline: none;
+  }
+  #search-input::placeholder {
+    color: var(--ink-muted);
+  }
+  kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink-muted);
+    background: var(--surface-muted);
+  }
+  .search-results {
+    overflow-y: auto;
+    padding: var(--space-2);
+    max-height: 50vh;
+  }
+  .search-results:empty::after {
+    content: '';
+  }
+  .search-results :global(a) {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .search-results :global(a:hover),
+  .search-results :global(a:focus) {
+    background: var(--surface-muted);
+  }
+  .search-results :global(a .title) {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .search-results :global(a .excerpt) {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 20px;
+  }
+  .search-results :global(mark) {
+    background: var(--tip-bg);
+    color: var(--accent-strong);
+    border-radius: 2px;
+    padding: 0 1px;
+  }
+  .no-results {
+    padding: var(--space-4);
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 14px;
+  }
+</style>
+
+<script>
+  let pagefind: any = null;
+
+  const trigger = document.getElementById('search-trigger');
+  const overlay = document.getElementById('search-overlay');
+  const input = document.getElementById('search-input') as HTMLInputElement | null;
+  const results = document.getElementById('search-results');
+
+  function open() {
+    overlay?.removeAttribute('hidden');
+    input?.focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function close() {
+    overlay?.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+    if (input) input.value = '';
+    if (results) results.innerHTML = '';
+  }
+
+  trigger?.addEventListener('click', open);
+
+  overlay?.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !overlay?.hasAttribute('hidden') === false) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      open();
+    }
+    if (e.key === 'Escape' && !overlay?.hasAttribute('hidden')) {
+      close();
+    }
+  });
+
+  async function loadPagefind() {
+    if (pagefind) return pagefind;
+    try {
+      pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+      await pagefind.init();
+    } catch {
+      // Pagefind not available in dev mode
+      pagefind = null;
+    }
+    return pagefind;
+  }
+
+  let debounceTimer: ReturnType<typeof setTimeout>;
+
+  input?.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const query = input.value.trim();
+      if (!query || !results) {
+        if (results) results.innerHTML = '';
+        return;
+      }
+
+      const pf = await loadPagefind();
+      if (!pf) {
+        results.innerHTML = '<div class="no-results">La búsqueda solo está disponible en el sitio construido.</div>';
+        return;
+      }
+
+      const search = await pf.search(query);
+      if (search.results.length === 0) {
+        results.innerHTML = '<div class="no-results">Sin resultados para "' + query + '"</div>';
+        return;
+      }
+
+      const items = await Promise.all(search.results.slice(0, 8).map((r: any) => r.data()));
+      results.innerHTML = items.map((item: any) =>
+        `<a href="${item.url}"><div class="title">${item.meta?.title || item.url}</div><div class="excerpt">${item.excerpt}</div></a>`
+      ).join('');
+    }, 200);
+  });
+</script>

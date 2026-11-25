@@ -1,0 +1,68 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { SITE } from '../../config';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articulos', ({ data }) => !data.draft);
+  return articles.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const dateStr = entry.data.date.toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' });
+---
+<BaseLayout title={`${entry.data.title} — ${SITE.name}`} description={entry.data.description}>
+  <article class="content-width article-page">
+    <header class="article-header">
+      <span class="article-date">{dateStr}</span>
+      <h1>{entry.data.title}</h1>
+      <p class="article-desc">{entry.data.description}</p>
+      <div class="article-tags">
+        {entry.data.tags.map(tag => <span class="dj-tag">{tag}</span>)}
+      </div>
+    </header>
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .article-page {
+    padding-top: 40px;
+    padding-bottom: 72px;
+  }
+  .article-header {
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--line);
+  }
+  .article-date {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .article-header h1 {
+    margin: var(--space-2) 0;
+    font-size: 34px;
+    line-height: 40px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .article-desc {
+    margin: 0;
+    font-size: 17px;
+    line-height: 28px;
+    color: var(--ink-muted);
+  }
+  .article-tags {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+  }
+</style>
