@@ -1,0 +1,203 @@
+---
+title: "Redes"
+description: "OSI, subnetting, puertos, DNS, comandos Windows vs Linux y Cisco IOS básico."
+label: "Cheat sheet · 2 págs"
+category: "fundamentos"
+tags: ["ccna", "fundamentos"]
+icon: "lan"
+pdf: "Redes-cheat-sheet-dajomar.pdf"
+updated: 2026-11-01
+order: 2
+---
+
+import Callout from '../../components/Callout.astro';
+import Flag from '../../components/Flag.astro';
+import CommandTable from '../../components/CommandTable.astro';
+
+## Modelo OSI y TCP/IP
+
+| Capa OSI | Qué hace | Ejemplos |
+| --- | --- | --- |
+| 7 Aplicación | Servicios al usuario | HTTP, DNS, SSH |
+| 6 Presentación | Formato y cifrado | TLS, JPEG |
+| 5 Sesión | Abre y cierra sesiones | RPC, NetBIOS |
+| 4 Transporte | Puertos, segmentos | TCP, UDP |
+| 3 Red | Direcciones IP, rutas | IP, ICMP · router |
+| 2 Enlace | MAC, tramas | Ethernet, ARP · switch |
+| 1 Física | Bits por el medio | Cable, fibra, Wi-Fi |
+
+<p class="small"><b>TCP/IP</b> resume las capas 5-7 en <b>Aplicación</b> y las capas 1-2 en <b>Acceso a red</b>. Para recordar OSI de abajo hacia arriba: <i>Física, Enlace, Red, Transporte, Sesión, Presentación, Aplicación</i>.</p>
+
+## Direccionamiento IPv4
+
+| Rango | Uso |
+| --- | --- |
+| 10.0.0.0/8 | Privada (empresas grandes) |
+| 172.16.0.0/12 | Privada (172.16 a 172.31) |
+| 192.168.0.0/16 | Privada (hogar, oficinas) |
+| 127.0.0.0/8 | Loopback (`127.0.0.1`) |
+| 169.254.0.0/16 | APIPA: el DHCP no respondió |
+| 0.0.0.0 | Cualquier dirección / ruta por defecto |
+
+<p class="small">Una IP privada no sale a internet directamente: el router hace <b>NAT</b> y la traduce a la IP pública.</p>
+
+## Subnetting (CIDR)
+
+| CIDR | Máscara | Hosts útiles |
+| --- | --- | --- |
+| /8 | 255.0.0.0 | 16 777 214 |
+| /16 | 255.255.0.0 | 65 534 |
+| /24 | 255.255.255.0 | 254 |
+| /25 | 255.255.255.128 | 126 |
+| /26 | 255.255.255.192 | 62 |
+| /27 | 255.255.255.224 | 30 |
+| /28 | 255.255.255.240 | 14 |
+| /29 | 255.255.255.248 | 6 |
+| /30 | 255.255.255.252 | 2 (enlaces punto a punto) |
+
+**Fórmula:** hosts = 2<sup>(32 − CIDR)</sup> − 2. Se restan la dirección de **red** y la de **broadcast**.
+
+Ejemplo: 192.168.10.70/26
+
+```
+Salto de bloque: 256 - 192 = 64
+Redes: .0  .64  .128  .192
+Red:        192.168.10.64
+Primer host 192.168.10.65
+Último host 192.168.10.126
+Broadcast:  192.168.10.127
+```
+
+<Callout type="tip">
+**Pro Tip:**
+Para cualquier máscara, el **tamaño del bloque** es 256 menos el último octeto que no es 0 ni 255. Las subredes empiezan en múltiplos de ese número.
+</Callout>
+
+## IPv6 en 1 minuto
+
+| | |
+| --- | --- |
+| ::1 | Loopback |
+| fe80::/10 | Link-local (solo en el segmento) |
+| fc00::/7 | Únicas locales (equivale a privadas) |
+| 2000::/3 | Globales (públicas) |
+| /64 | Tamaño estándar de una subred |
+
+<p class="small">Se abrevia quitando ceros a la izquierda y usando <code>::</code> una sola vez: <code>2001:0db8:0000:0000::0001</code> → <code>2001:db8::1</code>.</p>
+
+## TCP vs UDP
+
+| | TCP | UDP |
+| --- | --- | --- |
+| Conexión | Sí (3-way handshake) | No |
+| Fiable | Reenvía lo perdido, en orden | No garantiza entrega |
+| Velocidad | Más lento | Más rápido |
+| Uso | Web, correo, SSH | DNS, VoIP, streaming, DHCP |
+
+<p class="small"><b>Handshake:</b> SYN → SYN-ACK → ACK. Muchos SYN sin respuesta suelen indicar un escaneo o un SYN flood.</p>
+
+## Puertos que debes saber
+
+| Puerto | Servicio | Puerto | Servicio |
+| --- | --- | --- | --- |
+| 20/21 | FTP | 389 / 636 | LDAP / LDAPS |
+| 22 | SSH, SFTP | 443 | HTTPS |
+| 23 | Telnet ⚠ | 445 | SMB |
+| 25 / 587 | SMTP | 514 | Syslog |
+| 53 | DNS | 993 | IMAPS |
+| 67/68 | DHCP | 1433 | MS SQL |
+| 80 | HTTP | 3306 | MySQL |
+| 88 | Kerberos | 3389 | RDP |
+| 123 | NTP | 5432 | PostgreSQL |
+| 161/162 | SNMP | 8080 | HTTP alterno |
+
+<p class="small">0-1023 bien conocidos · 1024-49151 registrados · 49152-65535 dinámicos.</p>
+
+## Protocolos clave
+
+**DHCP** entrega IP, máscara, gateway y DNS en 4 pasos (**DORA**): Discover → Offer → Request → Ack.
+
+**ARP** traduce una IP a su dirección MAC dentro de la red local.
+
+**DNS** traduce nombres a IPs. Registros principales:
+
+| | |
+| --- | --- |
+| A / AAAA | Nombre → IPv4 / IPv6 |
+| CNAME | Alias hacia otro nombre |
+| MX | Servidor de correo del dominio |
+| TXT | Texto: SPF, DKIM, DMARC, verificaciones |
+| NS | Servidores autoritativos |
+| PTR | IP → nombre (DNS inverso) |
+
+## Comandos: Windows vs Linux
+
+<CommandTable>
+
+| Tarea | Windows | Linux |
+| --- | --- | --- |
+| Ver IP | `ipconfig /all` | `ip a` |
+| Gateway | `route print` | `ip r` |
+| Ruta | `tracert` | `traceroute` |
+| DNS | `nslookup` | `dig` |
+| Puertos | `netstat -ano` | `ss -tulpn` |
+| Tabla ARP | `arp -a` | `ip neigh` |
+| Renovar IP | `ipconfig /renew` | `dhclient -r; dhclient` |
+| Vaciar DNS | `ipconfig /flushdns` | `resolvectl flush-caches` |
+| Probar puerto | `Test-NetConnection` | `nc -zv` |
+
+</CommandTable>
+
+```bash
+Test-NetConnection 10.0.0.5 -Port 443
+dig MX dajomar.com +short
+dig -x 8.8.8.8  # DNS inverso
+mtr -rw google.com  # traceroute + ping
+```
+
+## Cisco IOS básico
+
+Modos: `>` usuario · `#` privilegiado · `(config)#` configuración
+
+```
+enable
+configure terminal
+hostname SW1
+interface g0/1
+ description Enlace a R1
+ ip address 192.168.1.1 255.255.255.0
+ no shutdown
+exit
+copy running-config startup-config
+```
+
+VLANs y puertos
+
+```
+vlan 10
+ name VENTAS
+interface f0/5
+ switchport mode access
+ switchport access vlan 10
+interface g0/1
+ switchport mode trunk
+```
+
+Verificar
+
+```
+show ip interface brief
+show running-config
+show vlan brief
+show interfaces trunk
+show ip route
+show mac address-table
+show cdp neighbors
+```
+
+<p class="small"><b>Access:</b> lleva una sola VLAN (equipos finales). <b>Trunk:</b> lleva varias VLANs etiquetadas (entre switches y routers).</p>
+
+<Callout type="tip">
+**Pro Tip:**
+Diagnostica de abajo hacia arriba: ¿cable o Wi-Fi conectado? → ¿tengo IP o es 169.254? → `ping` al gateway → `ping 8.8.8.8` → `nslookup google.com`. Si llega al 8.8.8.8 pero no resuelve nombres, el problema es DNS.
+</Callout>
