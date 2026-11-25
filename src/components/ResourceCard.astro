@@ -1,0 +1,29 @@
+---
+import { SITE } from '../config';
+
+interface Props {
+  title: string;
+  description: string;
+  label: string;
+  tags: string[];
+  icon: string;
+  pdf: string;
+  slug: string;
+}
+const { title, description, label, tags, icon, pdf, slug } = Astro.props;
+const pdfUrl = `${SITE.pdfBaseUrl}/${pdf}`;
+---
+<a href={`/recursos/${slug}/`} class="dj-card">
+  <span class="dj-card__icon">
+    <Fragment set:html={icon} />
+  </span>
+  <span class="dj-card__label">{label}</span>
+  <span class="dj-card__title">{title}</span>
+  <span class="dj-card__desc">{description}</span>
+  <span class="dj-card__foot">
+    <span class="dj-card__tags">
+      {tags.map(tag => <span class="dj-tag">{tag}</span>)}
+    </span>
+    <span class="dj-card__pdf" onclick={`event.preventDefault();event.stopPropagation();window.location.href='${pdfUrl}'`}>PDF &darr;</span>
+  </span>
+</a>

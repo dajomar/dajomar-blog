@@ -1,0 +1,11 @@
+---
+interface Props {
+  variant?: 'primary' | 'secondary' | 'ghost';
+  href?: string;
+  [key: string]: any;
+}
+const { variant = 'primary', href, ...rest } = Astro.props;
+const Tag = href ? 'a' : 'button';
+const cls = `dj-btn dj-btn--${variant}`;
+---
+<Tag class={cls} href={href} {...rest}><slot /></Tag>

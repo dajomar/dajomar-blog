@@ -1,0 +1,88 @@
+/* dajomar — generado desde tokens.json. Tema claro por defecto; oscuro con [data-theme="dark"] en <html>. */
+:root, [data-theme="light"] {
+  --surface: #ffffff;
+  --surface-muted: #f4f6f5;
+  --surface-raised: #ffffff;
+  --ink: #1c1c1c;
+  --ink-muted: #4a4f55;
+  --line: #dfe3e1;
+  --line-strong: #8a9199;
+  --heading: #0b6e99;
+  --on-heading: #ffffff;
+  --accent: #1f9d55;
+  --accent-strong: #157a41;
+  --on-accent: #ffffff;
+  --code-bg: #1b1d1f;
+  --code-ink: #f2f2f2;
+  --code-comment: #8fd19e;
+  --code-accent: #3ddc84;
+  --code-path: #79c0ff;
+  --inline-code-bg: #e6ebe8;
+  --inline-code-ink: #0b4f6c;
+  --tip-bg: #eaf7ef;
+  --tip-line: #a9dcbb;
+  --warning: #9a4a06;
+  --warning-bg: #fff6e5;
+  --danger: #b42318;
+  --danger-bg: #fdeeec;
+  --focus: var(--accent);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.05);
+}
+[data-theme="dark"] {
+  --surface: #0d1117;
+  --surface-muted: #161b22;
+  --surface-raised: #161b22;
+  --ink: #e6edf3;
+  --ink-muted: #9aa7b4;
+  --line: #30363d;
+  --line-strong: #6e7681;
+  --heading: #58a6ff;
+  --on-heading: #0d1117;
+  --accent: #3ddc84;
+  --accent-strong: #3ddc84;
+  --on-accent: #0d1117;
+  --code-bg: #222a35;
+  --code-ink: #e6edf3;
+  --code-comment: #8fd19e;
+  --code-accent: #3ddc84;
+  --code-path: #79c0ff;
+  --inline-code-bg: #262c34;
+  --inline-code-ink: #ffb77a;
+  --tip-bg: #12261a;
+  --tip-line: #2b6a45;
+  --warning: #f0b429;
+  --warning-bg: #2a2110;
+  --danger: #ff7b72;
+  --danger-bg: #2d1517;
+  --focus: var(--accent);
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.5);
+}
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+  --content-width: 760px;
+  --page-width: 1120px;
+  --font-sans: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.t-display { font-family: var(--font-sans); font-size: 44px; line-height: 48px; font-weight: 800; letter-spacing: -0.02em; }
+.t-h1 { font-family: var(--font-sans); font-size: 34px; line-height: 40px; font-weight: 800; letter-spacing: -0.01em; }
+.t-h2 { font-family: var(--font-sans); font-size: 26px; line-height: 32px; font-weight: 300; }
+.t-h3 { font-family: var(--font-sans); font-size: 18px; line-height: 26px; font-weight: 600; }
+.t-body { font-family: var(--font-sans); font-size: 16px; line-height: 26px; font-weight: 400; }
+.t-small { font-family: var(--font-sans); font-size: 14px; line-height: 22px; font-weight: 400; }
+.t-label { font-family: var(--font-sans); font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; }
+.t-code { font-family: var(--font-mono); font-size: 14px; line-height: 22px; font-weight: 400; }
+.t-code-inline { font-family: var(--font-mono); font-size: 14px; line-height: 22px; font-weight: 500; }
+.t-prompt { font-family: var(--font-mono); font-size: 14px; line-height: 20px; font-weight: 500; }
+.t-wordmark { font-family: var(--font-mono); font-size: 22px; line-height: 24px; font-weight: 700; }

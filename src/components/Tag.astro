@@ -1,0 +1,20 @@
+---
+interface Props {
+  href?: string;
+}
+const { href } = Astro.props;
+---
+{href ? (
+  <a href={href} class="dj-tag"><slot /></a>
+) : (
+  <span class="dj-tag"><slot /></span>
+)}
+
+<style>
+  a.dj-tag {
+    text-decoration: none;
+  }
+  a.dj-tag:hover {
+    border-color: var(--ink-muted);
+  }
+</style>

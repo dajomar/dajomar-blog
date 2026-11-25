@@ -1,0 +1,99 @@
+---
+import '../styles/global.css';
+import SiteHeader from '../components/SiteHeader.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { SITE } from '../config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = SITE.title,
+  description = SITE.description,
+} = Astro.props;
+
+const canonicalUrl = new URL(Astro.url.pathname, SITE.siteUrl);
+const cfToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
+---
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonicalUrl} />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:image" content="[PENDIENTE]" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="sitemap" href="/sitemap-index.xml" />
+  <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
+  <script is:inline>
+    (function(){
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch(e) {}
+    })();
+  </script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Saltar al contenido</a>
+  <SiteHeader />
+  <main id="main-content">
+    <slot />
+  </main>
+  <SiteFooter />
+  <script is:inline>
+    // Wrap Shiki code blocks with bar + copy button
+    document.querySelectorAll('pre.astro-code').forEach(function(pre) {
+      if (pre.parentElement && pre.parentElement.classList.contains('code-block')) return;
+      var lang = pre.getAttribute('data-language') || '';
+      var wrapper = document.createElement('div');
+      wrapper.className = 'code-block';
+      var bar = document.createElement('div');
+      bar.className = 'code-block__bar';
+      var langSpan = document.createElement('span');
+      langSpan.className = 'code-block__lang';
+      langSpan.textContent = lang;
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'code-block__copy';
+      copyBtn.textContent = 'Copiar';
+      copyBtn.addEventListener('click', function() {
+        var code = pre.textContent || '';
+        // Remove comment-only lines and inline comments (# ...) at end of lines
+        var cleaned = code.split('\n').map(function(line) {
+          // Remove trailing comments: everything from last unquoted # to end
+          return line.replace(/\s+#\s.*$/, '');
+        }).filter(function(line) {
+          // Remove lines that are only comments
+          return !/^\s*#/.test(line);
+        }).join('\n').trim();
+        navigator.clipboard.writeText(cleaned).then(function() {
+          copyBtn.textContent = 'Copiado';
+          setTimeout(function() { copyBtn.textContent = 'Copiar'; }, 1500);
+        });
+      });
+      bar.appendChild(langSpan);
+      bar.appendChild(copyBtn);
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(bar);
+      wrapper.appendChild(pre);
+      // Remove inline styles from Shiki since we style via CSS
+      pre.style.borderLeft = 'none';
+      pre.style.borderRadius = '0';
+    });
+  </script>
+  {cfToken && <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={`{"token":"${cfToken}"}`}></script>}
+</body>
+</html>

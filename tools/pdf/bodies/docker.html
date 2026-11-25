@@ -1,0 +1,229 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Docker<span>_</span></h1>
+    <div class="sub">Guía de atajos · contenedores y Compose</div>
+  </div></div>
+  <div class="prompt">user@dajomar:~$ docker --help</div>
+</header>
+
+<div class="cols">
+
+<h2>Conceptos clave</h2>
+<div class="item"><table>
+<tr><td>Imagen</td><td>Plantilla de solo lectura: el sistema base, tu app y sus dependencias.</td></tr>
+<tr><td>Contenedor</td><td>Una imagen en ejecución, aislada y desechable.</td></tr>
+<tr><td>Dockerfile</td><td>Receta paso a paso para construir una imagen.</td></tr>
+<tr><td>Volumen</td><td>Almacenamiento que sobrevive al contenedor.</td></tr>
+<tr><td>Red</td><td>Permite que los contenedores se comuniquen entre sí.</td></tr>
+<tr><td>Registry</td><td>Repositorio de imágenes (Docker Hub, GHCR, ECR).</td></tr>
+</table>
+<p class="small">Una imagen es como una clase y el contenedor es una instancia: de una imagen puedes levantar muchos contenedores.</p></div>
+
+<h2>Información y ayuda</h2>
+<div class="item"><pre>docker version
+docker info  <span class="c"># contenedores, imágenes, storage</span>
+docker &lt;comando&gt; --help
+docker system df  <span class="c"># espacio usado por Docker</span></pre></div>
+
+<h2>Imágenes</h2>
+<div class="item"><p>Descargar y listar</p>
+<pre>docker pull nginx  <span class="c"># por defecto toma :latest</span>
+docker pull postgres:16-alpine
+docker images
+docker image ls --filter dangling=true</pre></div>
+<div class="item"><p>Inspeccionar</p>
+<pre>docker image inspect nginx
+docker history nginx  <span class="c"># capas y su tamaño</span></pre></div>
+<div class="item"><p>Etiquetar, subir y borrar</p>
+<pre>docker tag miapp:latest dajomar/miapp:1.0.0
+docker login
+docker push dajomar/miapp:1.0.0
+docker rmi nginx
+docker image prune  <span class="c"># borra imágenes colgadas</span>
+docker image prune -a  <span class="c"># borra las que no se usan</span></pre>
+<p class="small">Formato: <code>USUARIO/REPOSITORIO:TAG</code>. Si no pones tag, Docker asume <code>latest</code>.</p></div>
+
+<h2>Correr contenedores</h2>
+<div class="item"><pre>docker run -d --name web -p 8080:80 nginx
+docker run -it --rm ubuntu bash
+docker run -d --name db \
+  -e POSTGRES_PASSWORD=secreto \
+  -v pgdata:/var/lib/postgresql/data \
+  --restart unless-stopped \
+  postgres:16-alpine</pre>
+<table>
+<tr><td>-d</td><td>Segundo plano (detached)</td></tr>
+<tr><td>-it</td><td>Terminal interactiva</td></tr>
+<tr><td>--rm</td><td>Se borra al detenerse</td></tr>
+<tr><td>--name</td><td>Nombre fijo para el contenedor</td></tr>
+<tr><td>-p 8080:80</td><td>Puerto <b>HOST : CONTENEDOR</b></td></tr>
+<tr><td>-e VAR=valor</td><td>Variable de entorno</td></tr>
+<tr><td>--env-file .env</td><td>Variables desde un archivo</td></tr>
+<tr><td>-v origen:destino</td><td>Monta un volumen o carpeta</td></tr>
+<tr><td>--network</td><td>Conecta a una red</td></tr>
+<tr><td>--restart</td><td>no · always · unless-stopped · on-failure</td></tr>
+</table></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Las banderas cortas se pueden combinar: <code>-d -p 80:80</code> es lo mismo que <code>-dp 80:80</code>. Y para referirte a un contenedor bastan los primeros caracteres de su ID.</div>
+
+<h2>Gestionar contenedores</h2>
+<div class="item"><pre>docker ps  <span class="c"># los que están corriendo</span>
+docker ps -a  <span class="c"># todos, incluso detenidos</span>
+docker stop web ; docker start web
+docker restart web
+docker rm web
+docker rm -f web  <span class="c"># detiene y borra</span>
+docker rename web web-prod</pre></div>
+
+<h2>Logs y depuración</h2>
+<div class="item"><pre>docker logs web
+docker logs -f --tail 100 web  <span class="c"># seguir en vivo</span>
+docker exec -it web sh  <span class="c"># entrar al contenedor</span>
+docker exec web cat /etc/nginx/nginx.conf
+docker inspect web  <span class="c"># config completa en JSON</span>
+docker inspect web \
+  -f '{{.NetworkSettings.IPAddress}}'
+docker stats  <span class="c"># CPU, RAM y red en vivo</span>
+docker top web  <span class="c"># procesos dentro</span>
+docker cp web:/var/log/app.log ./</pre>
+<p class="small">Si la imagen no trae <code>bash</code> (como Alpine), usa <code>sh</code>.</p></div>
+
+<h2>Volúmenes: persistir datos</h2>
+<div class="item"><p>Todo lo que se escribe dentro de un contenedor se pierde al borrarlo. Los volúmenes lo evitan.</p>
+<table>
+<tr><th>Tipo</th><th>Uso</th></tr>
+<tr><td>Named volume</td><td>Docker lo gestiona. Ideal para bases de datos.</td></tr>
+<tr><td>Bind mount</td><td>Una carpeta de tu equipo. Ideal en desarrollo.</td></tr>
+<tr><td>tmpfs</td><td>Solo en RAM. Datos temporales o sensibles.</td></tr>
+</table>
+<pre>docker volume create pgdata
+docker volume ls
+docker volume inspect pgdata
+docker volume rm pgdata
+docker volume prune  <span class="c"># borra los que no se usan</span></pre></div>
+<div class="item"><p>Montarlos al correr</p>
+<pre><span class="c"># named volume</span>
+docker run -v pgdata:/var/lib/postgresql/data \
+  postgres
+<span class="c"># bind mount (ruta absoluta del host)</span>
+docker run -v "$(pwd)":/app -w /app \
+  node:20 npm test
+<span class="c"># solo lectura</span>
+docker run \
+  -v "$(pwd)"/conf:/etc/nginx/conf.d:ro nginx</pre>
+<p class="small">En PowerShell usa <code>${PWD}</code> y la comilla invertida <code>`</code> para cortar líneas en lugar de <code>\</code>.</p></div>
+
+<h2>Redes</h2>
+<div class="item"><p><b>Regla de oro:</b> contenedores en la misma red definida por el usuario se encuentran <b>por nombre</b>, gracias al DNS interno de Docker.</p>
+<table>
+<tr><td>bridge</td><td>Por defecto. Red privada dentro del host.</td></tr>
+<tr><td>host</td><td>Usa directamente la red del host (sin <code>-p</code>).</td></tr>
+<tr><td>none</td><td>Sin red: aislamiento total.</td></tr>
+</table>
+<pre>docker network create app-net
+docker network ls
+docker network inspect app-net
+docker run -d --name db --network app-net postgres
+docker run -d --name api --network app-net miapi
+<span class="c"># api se conecta a la base usando el host "db"</span>
+docker network connect app-net web
+docker network prune</pre></div>
+
+<h2>Dockerfile</h2>
+<div class="item"><table>
+<tr><th>Instrucción</th><th>Para qué sirve</th></tr>
+<tr><td>FROM</td><td>Imagen base</td></tr>
+<tr><td>WORKDIR</td><td>Carpeta de trabajo</td></tr>
+<tr><td>COPY</td><td>Copia archivos al build</td></tr>
+<tr><td>RUN</td><td>Ejecuta comandos al construir</td></tr>
+<tr><td>ENV / ARG</td><td>Variables de entorno / de build</td></tr>
+<tr><td>EXPOSE</td><td>Documenta el puerto de la app</td></tr>
+<tr><td>USER</td><td>Usuario que corre el proceso</td></tr>
+<tr><td>CMD</td><td>Comando por defecto (se puede reemplazar)</td></tr>
+<tr><td>ENTRYPOINT</td><td>Ejecutable fijo del contenedor</td></tr>
+</table></div>
+<div class="item"><p>Ejemplo: app Node.js en dos etapas</p>
+<pre><span class="c"># Etapa 1: construir</span>
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+<span class="c"># Etapa 2: imagen final liviana</span>
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+USER node
+EXPOSE 3000
+CMD ["node", "dist/index.js"]</pre></div>
+<div class="item"><p>Construir</p>
+<pre>docker build -t miapp:1.0 .
+docker build -f Dockerfile.prod -t miapp:prod .
+docker build --no-cache -t miapp .</pre>
+<p><span class="flag">-t</span> nombre y tag · <span class="flag">.</span> contexto de build (carpeta actual) · <span class="flag">-f</span> otro Dockerfile</p></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Copia primero <code>package.json</code> e instala dependencias, y después el resto del código. Así Docker reutiliza la caché y el build tarda segundos en vez de minutos.</div>
+
+<h2>Docker Compose</h2>
+<div class="item"><p>Define varios servicios en un solo archivo <code>compose.yaml</code></p>
+<pre>services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    depends_on:
+      - db
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: secreto
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:</pre>
+<p class="small">Compose crea una red para el proyecto: <code>api</code> llega a la base con el host <code>db</code>.</p></div>
+<div class="item"><p>Comandos de Compose</p>
+<pre>docker compose up -d  <span class="c"># levanta todo</span>
+docker compose up -d --build  <span class="c"># reconstruye antes</span>
+docker compose ps
+docker compose logs -f api
+docker compose exec db psql -U postgres
+docker compose restart api
+docker compose down  <span class="c"># detiene y borra</span>
+docker compose down -v  <span class="c"># ⚠ también los volúmenes</span>
+docker compose config  <span class="c"># valida el archivo</span></pre></div>
+
+<h2>Limpieza</h2>
+<div class="item"><pre>docker container prune  <span class="c"># contenedores detenidos</span>
+docker image prune -a
+docker volume prune
+docker network prune
+docker builder prune  <span class="c"># caché de builds</span>
+docker system prune -a  <span class="c"># ⚠ casi todo</span>
+docker system prune -a --volumes  <span class="c"># ⚠ todo</span></pre></div>
+
+<h2>Seguridad y buenas prácticas</h2>
+<div class="item"><table>
+<tr><td>Tags fijos</td><td>Usa <code>postgres:16-alpine</code>, no <code>latest</code>.</td></tr>
+<tr><td>No root</td><td>Agrega <code>USER</code> en el Dockerfile.</td></tr>
+<tr><td>.dockerignore</td><td>Excluye <code>.git</code>, <code>.env</code>, <code>node_modules</code>.</td></tr>
+<tr><td>Secretos</td><td>Nunca en la imagen: usa <code>.env</code> o secrets.</td></tr>
+<tr><td>Imágenes chicas</td><td>Alpine, slim o distroless + multi-stage.</td></tr>
+<tr><td>Puertos</td><td>Publica solo lo necesario: <code>-p 127.0.0.1:5432:5432</code></td></tr>
+<tr><td>Escaneo</td><td>Revisa vulnerabilidades antes de desplegar.</td></tr>
+</table>
+<pre>docker scout quickview miapp:1.0
+docker scout cves miapp:1.0
+docker run --read-only --cap-drop ALL miapp</pre></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Si un contenedor se cae al iniciar, revisa en orden: <code>docker ps -a</code> (¿con qué código salió?) → <code>docker logs app</code> → <code>docker inspect app</code> → prueba entrar con <code>docker run -it --entrypoint sh imagen</code>.</div>
+
+</div>

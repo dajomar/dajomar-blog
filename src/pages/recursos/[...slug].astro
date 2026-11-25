@@ -1,0 +1,18 @@
+---
+import { getCollection, render } from 'astro:content';
+import ResourceLayout from '../../layouts/ResourceLayout.astro';
+
+export async function getStaticPaths() {
+  const cheatsheets = await getCollection('cheatsheets');
+  return cheatsheets.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+---
+<ResourceLayout frontmatter={entry.data} headings={headings}>
+  <Content />
+</ResourceLayout>

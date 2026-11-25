@@ -1,0 +1,10 @@
+[
+  {"slug": "linux",      "name": "Linux",          "pdf": "Linux-cheat-sheet-dajomar.pdf",          "icon": null,                   "color": null},
+  {"slug": "redes",      "name": "Redes",          "pdf": "Redes-cheat-sheet-dajomar.pdf",          "icon": "icons/lan.svg",        "color": "#0b6e99"},
+  {"slug": "bash",       "name": "Bash Scripting", "pdf": "Bash-scripting-cheat-sheet-dajomar.pdf", "icon": "icons/gnubash.svg",    "color": "#1b1d1f"},
+  {"slug": "git",        "name": "Git",            "pdf": "Git-cheat-sheet-dajomar.pdf",            "icon": "icons/git.svg",        "color": "#F05032"},
+  {"slug": "docker",     "name": "Docker",         "pdf": "Docker-cheat-sheet-dajomar.pdf",         "icon": "icons/docker.svg",     "color": "#2496ED"},
+  {"slug": "kubernetes", "name": "Kubernetes",     "pdf": "Kubernetes-cheat-sheet-dajomar.pdf",     "icon": "icons/kubernetes.svg", "color": "#326CE5"},
+  {"slug": "terraform",  "name": "Terraform",      "pdf": "Terraform-cheat-sheet-dajomar.pdf",      "icon": "icons/terraform.svg",  "color": "#7B42BC"},
+  {"slug": "jamf",       "name": "Jamf Pro",       "pdf": "Jamf-cheat-sheet-dajomar.pdf",           "icon": "icons/devices.svg",    "color": "#1b1d1f"}
+]

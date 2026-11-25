@@ -1,0 +1,324 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TerminalPrompt from '../components/TerminalPrompt.astro';
+import ResourceCard from '../components/ResourceCard.astro';
+import Callout from '../components/Callout.astro';
+import Button from '../components/Button.astro';
+import Tag from '../components/Tag.astro';
+import { getCollection } from 'astro:content';
+import { SITE } from '../config';
+import { icons } from '../icons';
+
+const cheatsheets = (await getCollection('cheatsheets')).sort((a, b) => a.data.order - b.data.order);
+const articles = (await getCollection('articulos', ({ data }) => !data.draft)).sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 3);
+---
+<BaseLayout>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner page-width">
+      <div class="hero-text">
+        <TerminalPrompt path="~" command="cat README.md" cursor />
+        <h1 class="hero-title">Apuntes de TI, comandos y laboratorio.</h1>
+        <p class="hero-desc">Cheat sheets, notas de estudio y lo que aprendo montando mi homelab. Linux, redes, contenedores, infraestructura como código y seguridad, en español y al grano.</p>
+        <div class="hero-actions">
+          <Button variant="primary" href="/recursos/">Ver los cheat sheets</Button>
+          <Button variant="secondary" href="/articulos/">Leer artículos</Button>
+        </div>
+      </div>
+      <div class="hero-terminal">
+        <div class="dj-code">
+          <div class="dj-code__bar"><span class="dj-code__lang">~/dajomar</span></div>
+          <pre>$ ls ~/recursos{'\n'}linux.pdf     redes.pdf    bash.pdf{'\n'}git.pdf       docker.pdf   kubernetes.pdf{'\n'}terraform.pdf jamf.pdf{'\n'}{'\n'}$ cat ruta.txt{'\n'}<span class="dj-c"># CCNA → Security+ → DevSecOps</span>{'\n'}{'\n'}$ <span class="dj-cursor"></span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Cheat sheets -->
+  <section class="cheatsheets-section">
+    <div class="page-width">
+      <div class="section-header">
+        <h2 class="dj-h2" id="recursos" style="border:0;padding:0;margin:0">Cheat sheets</h2>
+        <a href="/recursos/" class="ghost-link">Todos los recursos →</a>
+      </div>
+      <div class="filter-pills">
+        <a href="/recursos/" class="pill pill--active">Todos</a>
+        <a href="/recursos/?cat=fundamentos" class="pill">Fundamentos</a>
+        <a href="/recursos/?cat=devsecops" class="pill">DevSecOps</a>
+        <a href="/recursos/?cat=soporte-ti" class="pill">Soporte TI</a>
+      </div>
+      <div class="dj-grid">
+        {cheatsheets.map(cs => (
+          <ResourceCard
+            title={cs.data.title}
+            description={cs.data.description}
+            label={cs.data.label}
+            tags={cs.data.tags}
+            icon={icons[cs.data.icon] || ''}
+            pdf={cs.data.pdf}
+            slug={cs.id}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Lo que estoy estudiando -->
+  <section class="study-section">
+    <div class="study-inner page-width">
+      <div class="study-header">
+        <span class="dj-card__label">Ruta de estudio</span>
+        <h2 class="dj-h2" style="border:0;padding:0;margin:0">Lo que estoy estudiando</h2>
+      </div>
+      <div class="study-grid">
+        <div class="study-card">
+          <span class="study-num">01</span>
+          <span class="study-name">CCNA</span>
+          <span class="study-desc">Redes desde cero: subnetting, VLANs, routing y switching.</span>
+        </div>
+        <div class="study-card">
+          <span class="study-num">02</span>
+          <span class="study-name">Security+</span>
+          <span class="study-desc">Fundamentos de seguridad, amenazas, controles y respuesta a incidentes.</span>
+        </div>
+        <div class="study-card">
+          <span class="study-num">03</span>
+          <span class="study-name">DevSecOps</span>
+          <span class="study-desc">Contenedores, IaC y seguridad dentro del pipeline.</span>
+        </div>
+      </div>
+      <Callout type="tip">Cada cheat sheet tiene su versión en texto aquí, con buscador. Usa <code>/</code> para buscar un comando sin abrir el PDF.</Callout>
+    </div>
+  </section>
+
+  <!-- Últimos artículos -->
+  <section class="articles-section content-width">
+    <div class="section-header">
+      <h2 class="dj-h2" id="articulos" style="border:0;padding:0;margin:0">Últimos artículos</h2>
+      <a href="/articulos/" class="ghost-link">Ver todos →</a>
+    </div>
+    <div class="articles-list">
+      {articles.length === 0 && <p class="small">Los artículos están en camino.</p>}
+      {articles.map(a => (
+        <a href={`/articulos/${a.id}/`} class="article-row">
+          <span class="article-date">{a.data.date.toLocaleDateString('es', { month: 'short', year: 'numeric' })}</span>
+          <span class="article-info">
+            <span class="article-title">{a.data.title}</span>
+            <span class="article-desc">{a.data.description}</span>
+            <span class="article-tags">
+              {a.data.tags.map(tag => <span class="dj-tag">{tag}</span>)}
+            </span>
+          </span>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* Hero */
+  .hero {
+    padding: 72px 0 56px;
+  }
+  .hero-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: center;
+  }
+  .hero-text {
+    flex: 1 1 460px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .hero-title {
+    margin: 0;
+    font-size: 52px;
+    line-height: 56px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .hero-desc {
+    margin: 0;
+    font-size: 18px;
+    line-height: 29px;
+    color: var(--ink-muted);
+    max-width: 540px;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding-top: var(--space-1);
+  }
+  .hero-terminal {
+    flex: 1 1 420px;
+    min-width: 0;
+  }
+  @media (max-width: 768px) {
+    .hero {
+      padding: 40px 0 32px;
+    }
+    .hero-title {
+      font-size: 36px;
+      line-height: 40px;
+    }
+  }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-3);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: var(--space-1);
+    margin-bottom: var(--space-6);
+  }
+  .ghost-link {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--heading);
+    text-decoration: none;
+  }
+  .ghost-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Cheatsheets section */
+  .cheatsheets-section {
+    padding: var(--space-6) 0 var(--space-16);
+  }
+
+  /* Filter pills */
+  .filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .pill:hover {
+    border-color: var(--ink-muted);
+  }
+  .pill--active {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+
+  /* Study section */
+  .study-section {
+    background: var(--surface-muted);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .study-inner {
+    padding: 56px var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+  .study-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .study-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-4);
+  }
+  .study-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+  }
+  .study-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-strong);
+  }
+  .study-name {
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 700;
+  }
+  .study-desc {
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--ink-muted);
+  }
+
+  /* Articles section */
+  .articles-section {
+    padding: var(--space-16) var(--space-6);
+  }
+  .articles-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .article-row {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 4px var(--space-6);
+    padding: 20px 0;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .article-row:hover {
+    background: var(--surface-muted);
+  }
+  .article-date {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 26px;
+    color: var(--ink-muted);
+  }
+  .article-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .article-title {
+    font-size: 19px;
+    line-height: 26px;
+    font-weight: 700;
+  }
+  .article-desc {
+    font-size: 15px;
+    line-height: 24px;
+    color: var(--ink-muted);
+  }
+  .article-tags {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .article-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

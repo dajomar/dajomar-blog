@@ -1,0 +1,20 @@
+---
+interface Props {
+  type?: 'tip' | 'warning' | 'security';
+  title?: string;
+}
+const { type = 'tip', title } = Astro.props;
+
+const defaultTitles: Record<string, string> = {
+  tip: 'Pro Tip',
+  warning: '\u26A0 Cuidado',
+  security: 'Seguridad',
+};
+
+const variantClass = type === 'tip' ? '' : `dj-callout--${type}`;
+const displayTitle = title || defaultTitles[type];
+---
+<div class={`dj-callout ${variantClass}`.trim()}>
+  <strong class="dj-callout__title">{displayTitle}</strong>
+  <slot />
+</div>

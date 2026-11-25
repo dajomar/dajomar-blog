@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ResourceCard from '../../components/ResourceCard.astro';
+import { getCollection } from 'astro:content';
+import { icons } from '../../icons';
+
+const cheatsheets = (await getCollection('cheatsheets')).sort((a, b) => a.data.order - b.data.order);
+---
+<BaseLayout title="Recursos — dajomar" description="Cheat sheets de Linux, redes, Bash, Git, Docker, Kubernetes, Terraform y Jamf.">
+  <div class="page-width" style="padding-top: 40px; padding-bottom: 72px;">
+    <div class="section-header">
+      <h1 class="dj-h2" style="border:0;padding:0;margin:0">Cheat sheets</h1>
+    </div>
+    <div class="filter-pills">
+      <a href="/recursos/" class="pill pill--active">Todos</a>
+      <a href="/recursos/?cat=fundamentos" class="pill">Fundamentos</a>
+      <a href="/recursos/?cat=devsecops" class="pill">DevSecOps</a>
+      <a href="/recursos/?cat=soporte-ti" class="pill">Soporte TI</a>
+    </div>
+    <div class="dj-grid">
+      {cheatsheets.map(cs => (
+        <ResourceCard
+          title={cs.data.title}
+          description={cs.data.description}
+          label={cs.data.label}
+          tags={cs.data.tags}
+          icon={icons[cs.data.icon] || ''}
+          pdf={cs.data.pdf}
+          slug={cs.id}
+        />
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .section-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-3);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: var(--space-1);
+    margin-bottom: var(--space-6);
+  }
+  .filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: var(--radius-full);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+  .pill:hover {
+    border-color: var(--ink-muted);
+  }
+  .pill--active {
+    background: var(--ink);
+    color: var(--surface);
+    border-color: var(--ink);
+  }
+</style>

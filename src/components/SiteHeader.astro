@@ -1,0 +1,68 @@
+---
+import { SITE, NAV_ITEMS } from '../config';
+import ThemeToggle from './ThemeToggle.astro';
+
+const currentPath = Astro.url.pathname;
+---
+<header class="dj-header">
+  <div class="header-inner">
+    <a href="/" class="dj-logo" aria-label="Inicio">{SITE.logo.replace('_', '')}<span>_</span></a>
+    <button type="button" class="mobile-menu-btn dj-icon-btn" aria-label="Abrir menú" aria-expanded="false" id="menu-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <nav aria-label="Principal" class="dj-nav" id="main-nav">
+      {NAV_ITEMS.map(item => {
+        const isActive = currentPath.startsWith(item.href);
+        return <a href={item.href} aria-current={isActive ? 'page' : undefined}>{item.label}</a>;
+      })}
+    </nav>
+    <div class="dj-header__tools">
+      <label class="dj-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <span>buscar /</span>
+      </label>
+      <ThemeToggle />
+    </div>
+  </div>
+</header>
+
+<style>
+  .header-inner {
+    max-width: var(--page-width);
+    margin: 0 auto;
+    padding: var(--space-3) var(--space-6);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .mobile-menu-btn {
+    display: none;
+  }
+  @media (max-width: 768px) {
+    .mobile-menu-btn {
+      display: grid;
+    }
+    .dj-nav {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      gap: var(--space-3);
+      padding: var(--space-3) 0;
+    }
+    .dj-nav.is-open {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+  const btn = document.getElementById('menu-btn');
+  const nav = document.getElementById('main-nav');
+  btn?.addEventListener('click', () => {
+    const open = nav?.classList.toggle('is-open');
+    btn.setAttribute('aria-expanded', String(open));
+    btn.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+  });
+</script>

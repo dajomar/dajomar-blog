@@ -1,0 +1,203 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Kubernetes<span>_</span></h1>
+    <div class="sub">Guía de atajos · kubectl y DevSecOps</div>
+  </div></div>
+  <div class="prompt">user@dajomar:~$ kubectl get pods</div>
+</header>
+
+<div class="cols">
+
+<h2>Arquitectura</h2>
+<div class="item"><table>
+<tr><th>Control plane</th><th>Función</th></tr>
+<tr><td>kube-apiserver</td><td>La puerta de entrada: todo pasa por su API.</td></tr>
+<tr><td>etcd</td><td>Base de datos del clúster. ⚠ Guarda los Secrets.</td></tr>
+<tr><td>scheduler</td><td>Decide en qué nodo corre cada pod.</td></tr>
+<tr><td>controller-manager</td><td>Mantiene el estado deseado (réplicas, nodos).</td></tr>
+<tr><th>Cada nodo</th><th></th></tr>
+<tr><td>kubelet</td><td>Agente que arranca y vigila los pods.</td></tr>
+<tr><td>kube-proxy</td><td>Reglas de red para los Services.</td></tr>
+<tr><td>runtime</td><td>Ejecuta los contenedores (containerd).</td></tr>
+</table>
+<p class="small">Igual que Terraform, Kubernetes es <b>declarativo</b>: le dices "quiero 3 réplicas" y él se encarga de que siempre haya 3.</p></div>
+
+<h2>Objetos principales</h2>
+<div class="item"><table>
+<tr><td>Pod</td><td>Unidad mínima: uno o más contenedores juntos.</td></tr>
+<tr><td>Deployment</td><td>Mantiene N réplicas de un pod y hace rollouts.</td></tr>
+<tr><td>StatefulSet</td><td>Pods con identidad y disco fijo (bases de datos).</td></tr>
+<tr><td>DaemonSet</td><td>Un pod en cada nodo (agentes de logs, EDR).</td></tr>
+<tr><td>Job / CronJob</td><td>Tareas que terminan / programadas.</td></tr>
+<tr><td>Service</td><td>IP y DNS estables para un grupo de pods.</td></tr>
+<tr><td>Ingress</td><td>Entrada HTTP/HTTPS desde fuera del clúster.</td></tr>
+<tr><td>ConfigMap</td><td>Configuración no sensible.</td></tr>
+<tr><td>Secret</td><td>Datos sensibles (⚠ solo en base64).</td></tr>
+<tr><td>Namespace</td><td>Separa recursos por equipo o entorno.</td></tr>
+<tr><td>PV / PVC</td><td>Disco persistente / solicitud de disco.</td></tr>
+</table></div>
+
+<h2>Contextos y namespaces</h2>
+<div class="item"><pre>kubectl config get-contexts
+kubectl config use-context prod-cluster
+kubectl config current-context
+kubectl get ns
+kubectl config set-context --current \
+  --namespace=mi-app</pre>
+<p class="small">La config vive en <code>~/.kube/config</code>. ⚠ Contiene credenciales: trátala como una contraseña.</p></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Antes de cualquier cambio corre <code>kubectl config current-context</code>. El error más caro de Kubernetes es borrar algo en <b>prod</b> creyendo que estabas en <b>dev</b>.</div>
+
+<h2>Consultar</h2>
+<div class="item"><pre>kubectl get pods  <span class="c"># namespace actual</span>
+kubectl get pods -A  <span class="c"># todos los namespaces</span>
+kubectl get pods -o wide  <span class="c"># IP y nodo</span>
+kubectl get pods -w  <span class="c"># observar en vivo</span>
+kubectl get deploy,svc,ingress
+kubectl get pod web-7d9f -o yaml
+kubectl get pods -l app=web  <span class="c"># por etiqueta</span>
+kubectl describe pod web-7d9f  <span class="c"># eventos!</span>
+kubectl explain deployment.spec  <span class="c"># documentación</span>
+kubectl api-resources</pre></div>
+
+<h2>Crear y aplicar</h2>
+<div class="item"><pre>kubectl apply -f deploy.yaml
+kubectl apply -f k8s/  <span class="c"># carpeta completa</span>
+kubectl diff -f deploy.yaml  <span class="c"># qué cambiaría</span>
+kubectl delete -f deploy.yaml
+<span class="c"># generar YAML sin crear nada</span>
+kubectl create deployment web --image=nginx \
+  --dry-run=client -o yaml &gt; deploy.yaml</pre></div>
+
+<h2>Deployments y rollouts</h2>
+<div class="item"><pre>kubectl scale deploy web --replicas=3
+kubectl set image deploy/web web=nginx:1.27
+kubectl rollout status deploy/web
+kubectl rollout history deploy/web
+kubectl rollout undo deploy/web  <span class="c"># volver atrás</span>
+kubectl rollout restart deploy/web</pre></div>
+
+<h2>Depurar</h2>
+<div class="item"><pre>kubectl logs web-7d9f
+kubectl logs -f deploy/web  <span class="c"># seguir en vivo</span>
+kubectl logs web-7d9f --previous  <span class="c"># antes del crash</span>
+kubectl logs web-7d9f -c sidecar  <span class="c"># otro contenedor</span>
+kubectl exec -it web-7d9f -- sh
+kubectl port-forward svc/web 8080:80
+kubectl get events --sort-by=.lastTimestamp
+kubectl top pods  <span class="c"># requiere metrics-server</span>
+kubectl debug -it web-7d9f --image=busybox</pre></div>
+<div class="item"><table>
+<tr><th>Estado</th><th>Causa probable</th></tr>
+<tr><td>Pending</td><td>Sin recursos en los nodos o PVC sin disco.</td></tr>
+<tr><td>ImagePullBackOff</td><td>Imagen o tag incorrecto, o registry privado sin credenciales.</td></tr>
+<tr><td>CrashLoopBackOff</td><td>La app arranca y se cae: mira <code>logs --previous</code>.</td></tr>
+<tr><td>OOMKilled</td><td>Superó su límite de memoria.</td></tr>
+<tr><td>CreateContainer ConfigError</td><td>Falta un ConfigMap o Secret referenciado.</td></tr>
+</table></div>
+
+<h2>Deployment seguro (YAML)</h2>
+<div class="item"><pre>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: web }
+  template:
+    metadata:
+      labels: { app: web }
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: web
+          image: registry.io/web:1.4.2  <span class="c"># tag fijo</span>
+          ports: [{ containerPort: 8080 }]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: 100m, memory: 128Mi }
+            limits:   { memory: 256Mi }
+          readinessProbe:
+            httpGet: { path: /health, port: 8080 }</pre></div>
+
+<h2>Services</h2>
+<div class="item"><table>
+<tr><td>ClusterIP</td><td>Solo dentro del clúster (por defecto).</td></tr>
+<tr><td>NodePort</td><td>Abre un puerto (30000-32767) en cada nodo.</td></tr>
+<tr><td>LoadBalancer</td><td>Balanceador externo de la nube.</td></tr>
+</table>
+<pre>kubectl expose deploy web --port=80 \
+  --target-port=8080</pre>
+<p class="small">Dentro del clúster se llega por DNS: <code>web.mi-app.svc.cluster.local</code> o solo <code>web</code> desde el mismo namespace.</p></div>
+
+<h2>ConfigMaps y Secrets</h2>
+<div class="item"><pre>kubectl create configmap app-cfg \
+  --from-literal=LOG_LEVEL=info
+kubectl create secret generic db \
+  --from-literal=password='S3cr3t!'
+kubectl get secret db \
+  -o jsonpath='{.data.password}' | base64 -d</pre>
+<p class="small">⚠ <b>base64 no es cifrado.</b> Cualquiera con permiso de leer Secrets ve las contraseñas. Activa el cifrado de etcd y usa External Secrets, Sealed Secrets o un vault.</p></div>
+
+<h2>DevSecOps: RBAC</h2>
+<div class="item"><pre>kubectl auth can-i delete pods
+kubectl auth can-i --list \
+  --as=system:serviceaccount:mi-app:default
+kubectl get roles,rolebindings -n mi-app
+kubectl get clusterrolebindings</pre>
+<p class="small"><b>Role/RoleBinding</b> dan permisos en un namespace; <b>ClusterRole/ClusterRoleBinding</b>, en todo el clúster. Mínimo privilegio: nada de <code>cluster-admin</code> para apps ni personas en el día a día.</p></div>
+
+<h2>DevSecOps: aislar y endurecer</h2>
+<div class="item"><p>Pod Security Admission por namespace</p>
+<pre>kubectl label ns mi-app \
+  pod-security.kubernetes.io/enforce=restricted</pre>
+<p>NetworkPolicy: bloquear todo por defecto</p>
+<pre>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: mi-app
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]</pre>
+<p class="small">Después abres solo el tráfico necesario. Requiere un CNI compatible (Calico, Cilium).</p></div>
+<div class="item"><p>Escaneo y auditoría</p>
+<pre>trivy image registry.io/web:1.4.2  <span class="c"># CVEs</span>
+trivy k8s --report summary  <span class="c"># clúster</span>
+kubescape scan  <span class="c"># NSA / CIS</span>
+kube-bench run  <span class="c"># CIS en los nodos</span>
+checkov -d k8s/  <span class="c"># YAML antes de aplicar</span></pre></div>
+
+<h2>Helm</h2>
+<div class="item"><pre>helm repo add bitnami \
+  https://charts.bitnami.com/bitnami
+helm repo update
+helm search repo nginx
+helm upgrade --install web bitnami/nginx \
+  -n web --create-namespace -f values.yaml
+helm list -A
+helm template web bitnami/nginx  <span class="c"># ver YAML</span>
+helm rollback web 1
+helm uninstall web -n web</pre></div>
+
+<h2>Laboratorio local</h2>
+<div class="item"><table>
+<tr><td>kind</td><td>Clúster dentro de Docker. Ideal para CI y pruebas.</td></tr>
+<tr><td>minikube</td><td>Clúster local con addons fáciles.</td></tr>
+<tr><td>k3s</td><td>Kubernetes liviano. Perfecto para un homelab.</td></tr>
+</table>
+<pre>kind create cluster --name lab
+kind delete cluster --name lab</pre></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Agrega a tu <code>~/.bashrc</code>: <code>alias k=kubectl</code> y <code>source &lt;(kubectl completion bash)</code>. Para cambiar de contexto y namespace rápido, instala <code>kubectx</code> y <code>kubens</code>.</div>
+
+</div>

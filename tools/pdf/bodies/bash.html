@@ -1,0 +1,203 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Bash Scripting<span>_</span></h1>
+    <div class="sub">Guía de atajos · automatiza tareas en Linux</div>
+  </div></div>
+  <div class="prompt">user@dajomar:~$ ./script.sh</div>
+</header>
+
+<div class="cols">
+
+<h2>Tu primer script</h2>
+<div class="item"><pre>#!/usr/bin/env bash
+set -euo pipefail  <span class="c"># modo estricto</span>
+
+echo "Hola, $USER. Hoy es $(date +%F)"</pre>
+<pre>chmod +x script.sh
+./script.sh
+bash -x script.sh  <span class="c"># depurar línea a línea</span></pre>
+<table>
+<tr><td>#!</td><td>Shebang: indica qué intérprete usar</td></tr>
+<tr><td>set -e</td><td>Se detiene si un comando falla</td></tr>
+<tr><td>set -u</td><td>Error si usas una variable sin definir</td></tr>
+<tr><td>set -o pipefail</td><td>Falla si falla cualquier parte de un pipe</td></tr>
+</table></div>
+
+<div class="tip"><b class="t">Bash no es lo mismo que sh:</b>
+<code>sh</code> es el estándar POSIX básico y Bash lo amplía. En Ubuntu, <code>/bin/sh</code> es <b>dash</b> y en Alpine es <b>ash</b>, así que <code>[[ ]]</code>, los arrays o <code>{1..5}</code> fallan ahí.
+<pre>#!/usr/bin/env bash  <span class="c"># usas funciones de Bash</span>
+#!/bin/sh  <span class="c"># solo POSIX, corre en todos</span>
+ls -l /bin/sh  <span class="c"># ¿qué shell es tu sh?</span></pre></div>
+
+<h2>Variables</h2>
+<div class="item"><pre>nombre="David"  <span class="c"># sin espacios junto al =</span>
+echo "Hola $nombre"
+echo "Archivo: ${nombre}_backup.tar"
+hoy=$(date +%Y-%m-%d)  <span class="c"># resultado de un comando</span>
+total=$(( 5 + 3 * 2 ))  <span class="c"># aritmética</span>
+readonly RUTA="/opt/app"  <span class="c"># constante</span>
+export ENTORNO="prod"  <span class="c"># visible para subprocesos</span>
+read -p "¿Servidor? " servidor  <span class="c"># pedir dato</span></pre>
+<p class="small">Usa siempre comillas dobles: <code>"$var"</code>. Sin ellas, un valor con espacios se rompe en varias palabras.</p></div>
+
+<h2>Variables especiales</h2>
+<div class="item"><table>
+<tr><td>$0</td><td>Nombre del script</td></tr>
+<tr><td>$1, $2 …</td><td>Argumentos recibidos</td></tr>
+<tr><td>$#</td><td>Cantidad de argumentos</td></tr>
+<tr><td>"$@"</td><td>Todos los argumentos, uno por uno</td></tr>
+<tr><td>$?</td><td>Código de salida del último comando (0 = OK)</td></tr>
+<tr><td>$$</td><td>PID del script</td></tr>
+<tr><td>$!</td><td>PID del último proceso en segundo plano</td></tr>
+</table>
+<pre>if [[ $# -lt 1 ]]; then
+  echo "Uso: $0 &lt;directorio&gt;" &gt;&amp;2
+  exit 1
+fi</pre></div>
+
+<h2>Condicionales</h2>
+<div class="item"><pre>if [[ -f "$archivo" ]]; then
+  echo "Existe"
+elif [[ -d "$archivo" ]]; then
+  echo "Es un directorio"
+else
+  echo "No existe"
+fi</pre>
+<table>
+<tr><th>Prueba</th><th>Verdadero si…</th></tr>
+<tr><td>-f / -d</td><td>Es archivo / es directorio</td></tr>
+<tr><td>-e</td><td>Existe (cualquier tipo)</td></tr>
+<tr><td>-r -w -x</td><td>Se puede leer / escribir / ejecutar</td></tr>
+<tr><td>-z / -n</td><td>Texto vacío / no vacío</td></tr>
+<tr><td>== / !=</td><td>Textos iguales / distintos</td></tr>
+<tr><td>=~</td><td>Coincide con una regex</td></tr>
+<tr><td>-eq -ne</td><td>Números iguales / distintos</td></tr>
+<tr><td>-lt -le</td><td>Menor / menor o igual</td></tr>
+<tr><td>-gt -ge</td><td>Mayor / mayor o igual</td></tr>
+<tr><td>&amp;&amp;  ||  !</td><td>Y, O, NO</td></tr>
+</table>
+<p class="small">Prefiere <code>[[ ]]</code> sobre <code>[ ]</code>: maneja mejor espacios y permite <code>&amp;&amp;</code>, <code>||</code> y regex.</p></div>
+<div class="item"><p>case: varias opciones</p>
+<pre>case "$1" in
+  start)   systemctl start app ;;
+  stop)    systemctl stop app ;;
+  restart) systemctl restart app ;;
+  *)       echo "Uso: $0 {start|stop|restart}"
+           exit 1 ;;
+esac</pre></div>
+
+<h2>Bucles</h2>
+<div class="item"><pre>for srv in web01 web02 db01; do
+  ping -c1 -W1 "$srv" &gt;/dev/null &amp;&amp; echo "$srv OK"
+done
+
+for i in {1..5}; do echo "Intento $i"; done
+
+for f in /var/log/*.log; do
+  echo "$f: $(wc -l &lt; "$f") líneas"
+done</pre></div>
+<div class="item"><p>Leer un archivo línea por línea</p>
+<pre>while IFS= read -r linea; do
+  echo "→ $linea"
+done &lt; servidores.txt</pre>
+<p class="small"><code>break</code> sale del bucle · <code>continue</code> salta a la siguiente vuelta.</p></div>
+
+<h2>Funciones</h2>
+<div class="item"><pre>log() {
+  echo "[$(date '+%F %T')] $*" \
+    | tee -a /var/log/mi.log
+}
+
+existe_usuario() {
+  local usuario="$1"  <span class="c"># variable local</span>
+  id "$usuario" &amp;&gt;/dev/null
+}
+
+if existe_usuario "ana"; then log "ana existe"; fi</pre>
+<p class="small"><code>return</code> devuelve un código (0-255), no texto. Para devolver texto usa <code>echo</code> y captúralo con <code>$(función)</code>.</p></div>
+
+<h2>Arrays</h2>
+<div class="item"><pre>servidores=("web01" "web02" "db01")
+echo "${servidores[0]}"  <span class="c"># primero</span>
+echo "${servidores[@]}"  <span class="c"># todos</span>
+echo "${#servidores[@]}"  <span class="c"># cantidad</span>
+servidores+=("cache01")  <span class="c"># agregar</span>
+for s in "${servidores[@]}"; do echo "$s"; done</pre></div>
+
+<h2>Manipular texto</h2>
+<div class="item"><table>
+<tr><th>Expresión</th><th>Con archivo="reporte.tar.gz"</th></tr>
+<tr><td>${#archivo}</td><td>Largo: 14</td></tr>
+<tr><td>${archivo%.gz}</td><td>Quita al final: reporte.tar</td></tr>
+<tr><td>${archivo%%.*}</td><td>Quita todo desde el 1er punto: reporte</td></tr>
+<tr><td>${archivo#*.}</td><td>Quita al inicio: tar.gz</td></tr>
+<tr><td>${archivo/tar/zip}</td><td>Reemplaza: reporte.zip.gz</td></tr>
+<tr><td>${archivo^^}</td><td>Mayúsculas: REPORTE.TAR.GZ</td></tr>
+<tr><td>${var:-def}</td><td>Usa "def" si var está vacía</td></tr>
+<tr><td>${var:?msg}</td><td>Error con msg si var está vacía</td></tr>
+</table></div>
+
+<h2>Redirecciones y here-doc</h2>
+<div class="item"><pre>cmd &gt; salida.txt 2&gt;&amp;1  <span class="c"># salida y errores</span>
+cmd &amp;&gt;/dev/null  <span class="c"># silenciar todo</span>
+echo "error" &gt;&amp;2  <span class="c"># escribir en stderr</span>
+
+cat &gt; /etc/motd &lt;&lt;EOF
+Servidor: $(hostname)
+Administrado por dajomar
+EOF</pre></div>
+
+<h2>Errores y limpieza</h2>
+<div class="item"><pre>tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT  <span class="c"># limpia al salir</span>
+
+if ! cp origen.txt "$tmp"/; then
+  echo "Falló la copia" &gt;&amp;2
+  exit 1
+fi
+
+comando || { echo "falló"; exit 1; }</pre>
+<p class="small">Convención: <code>exit 0</code> todo bien · <code>exit 1</code> o más, error.</p></div>
+
+<h2>Programar con cron</h2>
+<div class="item"><pre>crontab -e  <span class="c"># editar tareas</span>
+crontab -l  <span class="c"># listar</span></pre>
+<pre>┌─ minuto (0-59)
+│ ┌─ hora (0-23)
+│ │ ┌─ día del mes (1-31)
+│ │ │ ┌─ mes (1-12)
+│ │ │ │ ┌─ día de la semana (0-7, 0 y 7 = dom)
+* * * * *  comando</pre>
+<table>
+<tr><td>0 2 * * *</td><td>Todos los días a las 2:00</td></tr>
+<tr><td>*/15 * * * *</td><td>Cada 15 minutos</td></tr>
+<tr><td>0 9 * * 1-5</td><td>Lunes a viernes a las 9:00</td></tr>
+<tr><td>0 0 1 * *</td><td>El día 1 de cada mes</td></tr>
+</table>
+<p class="small">En cron usa rutas absolutas y redirige la salida a un log: <code>… &gt;&gt; /var/log/backup.log 2&gt;&amp;1</code></p></div>
+
+<h2>Ejemplo real: backup con rotación</h2>
+<div class="item"><pre>#!/usr/bin/env bash
+set -euo pipefail
+
+ORIGEN="/var/www"
+DESTINO="/backups"
+DIAS=7
+archivo="$DESTINO/www_$(date +%F_%H%M).tar.gz"
+
+log() { echo "[$(date '+%F %T')] $*"; }
+
+mkdir -p "$DESTINO"
+log "Iniciando backup de $ORIGEN"
+tar -czf "$archivo" "$ORIGEN"
+tam=$(du -h "$archivo" | cut -f1)
+log "Creado: $archivo ($tam)"
+
+find "$DESTINO" -name 'www_*.tar.gz' \
+  -mtime +"$DIAS" -delete
+log "Backups con más de $DIAS días eliminados"</pre></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Pasa tus scripts por <code>shellcheck script.sh</code> antes de usarlos. Detecta comillas faltantes, variables sin usar y errores comunes que <code>bash</code> no te avisa.</div>
+
+</div>

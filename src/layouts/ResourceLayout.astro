@@ -1,0 +1,227 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Tag from '../components/Tag.astro';
+import Button from '../components/Button.astro';
+import TerminalPrompt from '../components/TerminalPrompt.astro';
+import { SITE } from '../config';
+import { icons } from '../icons';
+
+interface Props {
+  frontmatter: {
+    title: string;
+    description: string;
+    label: string;
+    category: string;
+    tags: string[];
+    icon: string;
+    pdf: string;
+    updated: Date;
+    order: number;
+  };
+  headings: { depth: number; slug: string; text: string }[];
+}
+
+const { frontmatter, headings } = Astro.props;
+const { title, description, label, tags, icon, pdf, updated } = frontmatter;
+const pdfUrl = `${SITE.pdfBaseUrl}/${pdf}`;
+const iconSvg = icons[icon] || '';
+const updatedStr = updated.toLocaleDateString('es', { month: 'short', year: 'numeric' });
+const h2Headings = headings.filter(h => h.depth === 2);
+const promptPath = `~/${title.toLowerCase().replace(/\s+/g, '-')}`;
+---
+<BaseLayout title={`${title}: guia de atajos — ${SITE.name}`} description={description}>
+  <div class="resource-page page-width">
+    <nav aria-label="Ruta" class="breadcrumb">
+      <a href="/">Inicio</a> / <a href="/recursos/">Recursos</a> / {title}
+    </nav>
+    <div class="resource-header">
+      <div class="resource-header__info">
+        <div class="resource-header__top">
+          <span class="resource-icon">
+            <Fragment set:html={iconSvg.replace('width="24"', 'width="34"').replace('height="24"', 'height="34"')} />
+          </span>
+          <span class="dj-card__label">{label} · actualizado {updatedStr}</span>
+        </div>
+        <h1 class="resource-title">{title}: guia de atajos</h1>
+        <p class="resource-desc">{description}</p>
+        <div class="resource-tags">
+          {tags.map(tag => <Tag>{tag}</Tag>)}
+        </div>
+      </div>
+      <div class="resource-actions">
+        <Button variant="primary" href={pdfUrl}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"></path></svg>
+          Descargar PDF
+        </Button>
+        <Button variant="secondary" href={`${SITE.github}`}>Ver en GitHub</Button>
+      </div>
+    </div>
+
+    <div class="resource-body">
+      <aside class="resource-sidebar">
+        <span class="dj-card__label">En esta pagina</span>
+        <nav aria-label="Contenido" class="toc">
+          {h2Headings.map(h => (
+            <a href={`#${h.slug}`} class="toc-link">{h.text}</a>
+          ))}
+        </nav>
+        <TerminalPrompt path={promptPath} command={`man ${title.toLowerCase().split(' ')[0]}`} />
+      </aside>
+      <article class="resource-content prose">
+        <slot />
+      </article>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .resource-page {
+    padding-top: 40px;
+    padding-bottom: 72px;
+  }
+  .breadcrumb {
+    font-size: 14px;
+    color: var(--ink-muted);
+    margin-bottom: 20px;
+  }
+  .breadcrumb a {
+    color: var(--heading);
+    text-decoration: none;
+  }
+  .resource-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-6);
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+  }
+  .resource-header__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+    flex: 1 1 520px;
+  }
+  .resource-header__top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .resource-icon {
+    width: 56px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-lg);
+    background: var(--surface-muted);
+  }
+  .resource-icon :global(svg) {
+    fill: var(--ink);
+  }
+  .resource-title {
+    margin: 0;
+    font-size: 40px;
+    line-height: 46px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .resource-desc {
+    margin: 0;
+    font-size: 17px;
+    line-height: 28px;
+    color: var(--ink-muted);
+    max-width: 620px;
+  }
+  .resource-tags {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+  }
+  .resource-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .resource-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    padding-top: var(--space-8);
+    align-items: flex-start;
+  }
+  .resource-sidebar {
+    flex: 1 1 200px;
+    max-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: sticky;
+    top: var(--space-6);
+  }
+  .toc {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 15px;
+    line-height: 22px;
+  }
+  .toc-link {
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    color: var(--ink-muted);
+  }
+  .toc-link:hover {
+    color: var(--ink);
+    background: var(--surface-muted);
+  }
+  .resource-content {
+    flex: 999 1 560px;
+    min-width: 0;
+    max-width: var(--content-width);
+  }
+  @media (max-width: 768px) {
+    .resource-sidebar {
+      max-width: 100%;
+      position: static;
+    }
+    .resource-title {
+      font-size: 30px;
+      line-height: 36px;
+    }
+  }
+</style>
+
+<script>
+  // Active TOC link tracking
+  const links = document.querySelectorAll('.toc-link');
+  const headings = Array.from(links).map(link => {
+    const id = link.getAttribute('href')?.slice(1);
+    return id ? document.getElementById(id) : null;
+  }).filter(Boolean);
+
+  function updateActive() {
+    let current = 0;
+    headings.forEach((h, i) => {
+      if (h && h.getBoundingClientRect().top <= 100) current = i;
+    });
+    links.forEach((l, i) => {
+      if (i === current) {
+        (l as HTMLElement).style.fontWeight = '600';
+        (l as HTMLElement).style.color = 'var(--ink)';
+        (l as HTMLElement).style.background = 'var(--surface-muted)';
+        (l as HTMLElement).style.boxShadow = 'inset 2px 0 0 var(--accent)';
+      } else {
+        (l as HTMLElement).style.fontWeight = '';
+        (l as HTMLElement).style.color = '';
+        (l as HTMLElement).style.background = '';
+        (l as HTMLElement).style.boxShadow = '';
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateActive, { passive: true });
+  updateActive();
+</script>

@@ -1,0 +1,11 @@
+---
+interface Props {
+  path?: string;
+  command?: string;
+  cursor?: boolean;
+}
+const { path = '~', command = '', cursor = false } = Astro.props;
+---
+<span class="dj-prompt">
+  <span class="dj-prompt__user">david@dajomar</span><span class="dj-prompt__sep">:</span><span class="dj-prompt__path">{path}</span><span class="dj-prompt__sep">$ </span>{command}{cursor && <span class="dj-cursor" />}
+</span>

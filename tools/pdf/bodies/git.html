@@ -1,0 +1,160 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Git<span>_</span></h1>
+    <div class="sub">Guía de atajos · control de versiones sin miedo</div>
+  </div></div>
+  <div class="prompt">user@dajomar:~$ git status</div>
+</header>
+
+<div class="cols">
+
+<h2>Cómo piensa Git</h2>
+<div class="item"><pre>Directorio de trabajo ──add──▶ Staging
+Staging ──commit──▶ Repositorio local
+Repositorio local ──push──▶ Remoto (GitHub)
+Remoto ──pull / fetch──▶ Repositorio local</pre>
+<table>
+<tr><td>Working dir</td><td>Tus archivos tal como los editas</td></tr>
+<tr><td>Staging</td><td>Lo que entrará en el próximo commit</td></tr>
+<tr><td>Commit</td><td>Una foto del proyecto con mensaje e ID</td></tr>
+<tr><td>Branch</td><td>Una línea de trabajo independiente</td></tr>
+<tr><td>HEAD</td><td>Dónde estás parado ahora</td></tr>
+<tr><td>origin</td><td>Nombre por defecto del remoto</td></tr>
+</table></div>
+
+<h2>Configuración inicial</h2>
+<div class="item"><pre>git config --global user.name "David Maza"
+git config --global user.email "tu@correo.com"
+git config --global init.defaultBranch main
+git config --global core.editor "code --wait"
+git config --list</pre></div>
+
+<h2>Empezar un proyecto</h2>
+<div class="item"><pre>git init  <span class="c"># repo nuevo aquí</span>
+git clone https://github.com/user/repo.git
+git clone git@github.com:user/repo.git  <span class="c"># SSH</span></pre></div>
+
+<h2>Flujo diario</h2>
+<div class="item"><pre>git status
+git add archivo.txt
+git add .  <span class="c"># todo lo modificado</span>
+git add -p  <span class="c"># elegir cambios por partes</span>
+git commit -m "feat: agrega login"
+git commit -am "fix: corrige typo"  <span class="c"># add + commit</span>
+git push</pre></div>
+<div class="item"><p>Ver diferencias</p>
+<pre>git diff  <span class="c"># cambios sin agregar</span>
+git diff --staged  <span class="c"># lo que va al commit</span>
+git diff main..feature  <span class="c"># entre ramas</span></pre></div>
+
+<h2>Historial</h2>
+<div class="item"><pre>git log --oneline --graph --all
+git log -p archivo.txt  <span class="c"># cambios de un archivo</span>
+git log --author="David" --since="2 weeks"
+git show a1b2c3d  <span class="c"># detalle de un commit</span>
+git blame archivo.txt  <span class="c"># quién cambió cada línea</span></pre></div>
+
+<h2>Ramas</h2>
+<div class="item"><pre>git branch  <span class="c"># listar locales</span>
+git branch -a  <span class="c"># incluye remotas</span>
+git switch -c feature/login  <span class="c"># crear y cambiar</span>
+git switch main
+git merge feature/login
+git branch -d feature/login  <span class="c"># borrar (ya unida)</span>
+git branch -D experimento  <span class="c"># forzar borrado</span>
+git push origin --delete feature/login</pre>
+<p class="small"><code>git switch</code> reemplaza al viejo <code>git checkout</code> para cambiar de rama.</p></div>
+
+<h2>Remotos</h2>
+<div class="item"><pre>git remote -v
+git remote add origin git@github.com:user/repo.git
+git push -u origin main  <span class="c"># primera vez</span>
+git fetch  <span class="c"># trae sin mezclar</span>
+git pull  <span class="c"># fetch + merge</span>
+git pull --rebase  <span class="c"># historial más limpio</span></pre></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Haz <code>git pull</code> antes de empezar a trabajar y antes de cada <code>push</code>. Así evitas la mayoría de los conflictos.</div>
+
+<h2>Deshacer cambios</h2>
+<div class="item"><pre><span class="c"># descartar cambios de un archivo</span>
+git restore archivo.txt
+<span class="c"># sacar un archivo del staging</span>
+git restore --staged archivo.txt
+<span class="c"># corregir mensaje o contenido del último commit</span>
+git commit --amend
+<span class="c"># deshacer un commit ya subido (crea uno nuevo)</span>
+git revert a1b2c3d
+<span class="c"># recuperar commits o ramas "perdidos"</span>
+git reflog</pre></div>
+<div class="item"><p>git reset: mover la rama hacia atrás</p>
+<table>
+<tr><th>Modo</th><th>Commit</th><th>Staging</th><th>Archivos</th></tr>
+<tr><td>--soft</td><td>Se deshace</td><td>Se mantiene</td><td>Se mantienen</td></tr>
+<tr><td>--mixed</td><td>Se deshace</td><td>Se vacía</td><td>Se mantienen</td></tr>
+<tr><td>--hard ⚠</td><td>Se deshace</td><td>Se vacía</td><td>Se pierden</td></tr>
+</table>
+<pre>git reset --soft HEAD~1  <span class="c"># deshace el último commit</span>
+git reset --hard origin/main  <span class="c"># ⚠ igual al remoto</span></pre>
+<p class="small"><b>Regla:</b> si el commit ya está en el remoto y otros lo usan, usa <code>revert</code>, no <code>reset</code>.</p></div>
+
+<h2>Stash: guardar para después</h2>
+<div class="item"><pre>git stash  <span class="c"># guarda cambios sin commit</span>
+git stash -u  <span class="c"># incluye archivos nuevos</span>
+git stash list
+git stash pop  <span class="c"># recupera y borra</span>
+git stash apply stash@{1}  <span class="c"># recupera sin borrar</span></pre></div>
+
+<h2>Conflictos</h2>
+<div class="item"><pre>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+tu versión
+=======
+la versión de la otra rama
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature/login</pre>
+<pre>git status  <span class="c"># ver archivos en conflicto</span>
+<span class="c"># edita, deja lo correcto y borra las marcas</span>
+git add archivo.txt
+git commit  <span class="c"># o: git rebase --continue</span>
+git merge --abort  <span class="c"># cancelar el merge</span></pre></div>
+
+<h2>Rebase y tags</h2>
+<div class="item"><pre>git switch feature/login
+git rebase main  <span class="c"># reaplica tus commits</span>
+git rebase -i HEAD~3  <span class="c"># unir o editar commits</span>
+git tag -a v1.0.0 -m "Primera versión"
+git push origin --tags</pre>
+<p class="small"><b>Merge</b> conserva la historia tal cual pasó. <b>Rebase</b> la deja lineal. Nunca hagas rebase de una rama compartida.</p></div>
+
+<h2>.gitignore</h2>
+<div class="item"><pre><span class="c"># dependencias y builds</span>
+node_modules/
+dist/
+<span class="c"># secretos y entorno</span>
+.env
+*.pem
+<span class="c"># sistema y editor</span>
+.DS_Store
+.vscode/</pre>
+<pre>git rm --cached .env  <span class="c"># dejar de seguirlo</span></pre></div>
+
+<h2>Mensajes de commit</h2>
+<div class="item"><table>
+<tr><td>feat:</td><td>Nueva funcionalidad</td></tr>
+<tr><td>fix:</td><td>Corrección de un error</td></tr>
+<tr><td>docs:</td><td>Solo documentación</td></tr>
+<tr><td>refactor:</td><td>Cambio de código sin cambiar comportamiento</td></tr>
+<tr><td>chore:</td><td>Mantenimiento, dependencias, config</td></tr>
+<tr><td>test:</td><td>Agrega o corrige pruebas</td></tr>
+</table>
+<p class="small">Formato <b>Conventional Commits</b>: en imperativo y corto. <code>fix: corrige validación del correo</code></p></div>
+
+<div class="tip"><b class="t">Seguridad:</b>
+Si subiste una contraseña o API key, borrarla en un nuevo commit <b>no basta</b>: sigue en el historial. Revócala y genera una nueva de inmediato. Para prevenirlo, usa <code>.gitignore</code> y herramientas como <code>gitleaks</code>.</div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Crea tus propios atajos:
+<pre>git config --global alias.lg \
+  "log --oneline --graph --all"
+git lg</pre></div>
+
+</div>

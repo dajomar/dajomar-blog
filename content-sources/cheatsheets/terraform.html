@@ -1,0 +1,232 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Terraform<span>_</span></h1>
+    <div class="sub">Guía de atajos · IaC y DevSecOps</div>
+  </div></div>
+  <div class="prompt">user@dajomar:~$ terraform plan</div>
+</header>
+
+<div class="cols">
+
+<h2>Conceptos clave</h2>
+<div class="item"><table>
+<tr><td>Provider</td><td>Plugin que habla con una plataforma (AWS, Azure, GitHub, Proxmox).</td></tr>
+<tr><td>Resource</td><td>Algo que Terraform crea y administra.</td></tr>
+<tr><td>Data source</td><td>Lee algo que ya existe, sin administrarlo.</td></tr>
+<tr><td>Variable</td><td>Entrada configurable del código.</td></tr>
+<tr><td>Output</td><td>Valor que se muestra o se pasa a otro módulo.</td></tr>
+<tr><td>Module</td><td>Conjunto reutilizable de recursos.</td></tr>
+<tr><td>State</td><td>Registro de lo que existe realmente. ⚠ Puede contener secretos.</td></tr>
+<tr><td>Backend</td><td>Dónde se guarda el state (local, S3, Azure, HCP).</td></tr>
+</table>
+<p class="small">Terraform es <b>declarativo</b>: describes el estado final que quieres y él calcula qué crear, cambiar o borrar.</p></div>
+
+<h2>Estructura típica</h2>
+<div class="item"><pre>proyecto/
+├── main.tf  <span class="c"># recursos</span>
+├── providers.tf  <span class="c"># providers y versiones</span>
+├── variables.tf  <span class="c"># entradas</span>
+├── outputs.tf  <span class="c"># salidas</span>
+├── backend.tf  <span class="c"># dónde va el state</span>
+├── terraform.tfvars  <span class="c"># valores (no secretos)</span>
+├── .terraform.lock.hcl  <span class="c"># ✓ sí va a Git</span>
+└── modules/</pre></div>
+
+<h2>Flujo de trabajo</h2>
+<div class="item"><pre>terraform init  <span class="c"># descarga providers</span>
+terraform fmt -recursive  <span class="c"># formatea</span>
+terraform validate  <span class="c"># revisa sintaxis</span>
+terraform plan -out=tfplan  <span class="c"># qué va a cambiar</span>
+terraform apply tfplan  <span class="c"># aplica ese plan exacto</span>
+terraform destroy  <span class="c"># ⚠ borra todo</span></pre>
+<table>
+<tr><td>-var-file=prod.tfvars</td><td>Usa otro archivo de valores</td></tr>
+<tr><td>-var="region=ca-central-1"</td><td>Pasa una variable suelta</td></tr>
+<tr><td>-target=aws_s3_bucket.logs</td><td>Solo un recurso (emergencias)</td></tr>
+<tr><td>-replace=aws_instance.web</td><td>Fuerza recrear un recurso</td></tr>
+<tr><td>-refresh-only</td><td>Detecta cambios hechos a mano (drift)</td></tr>
+<tr><td>-upgrade</td><td>Con init: actualiza providers</td></tr>
+</table></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Guarda el plan con <code>-out</code> y aplica <b>ese</b> archivo. Así lo que revisaste es exactamente lo que se ejecuta. En el plan busca siempre las líneas <code>destroy</code> y <code>must be replaced</code>.</div>
+
+<h2>Lectura del plan</h2>
+<div class="item"><table>
+<tr><td>+</td><td>Se va a crear</td></tr>
+<tr><td>~</td><td>Se modifica sin recrear</td></tr>
+<tr><td>-/+</td><td>Se destruye y se vuelve a crear ⚠</td></tr>
+<tr><td>-</td><td>Se va a destruir ⚠</td></tr>
+<tr><td>&lt;=</td><td>Se lee un data source</td></tr>
+</table></div>
+
+<h2>HCL: lo esencial</h2>
+<div class="item"><p>Providers con versión fija</p>
+<pre>terraform {
+  required_version = "&gt;= 1.6"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = var.region
+  default_tags {
+    tags = { Owner = "devsecops", Env = var.env }
+  }
+}</pre></div>
+<div class="item"><p>Recurso seguro por defecto</p>
+<pre style="font-size:7.2pt">resource "aws_s3_bucket" "logs" {
+  bucket = "dajomar-logs-${var.env}"
+  lifecycle { prevent_destroy = true }
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket                  = aws_s3_bucket.logs.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}</pre></div>
+<div class="item"><p>Variables con validación</p>
+<pre>variable "env" {
+  type        = string
+  description = "Entorno de despliegue"
+  validation {
+    condition = contains(["dev","prod"], var.env)
+    error_message = "env debe ser dev o prod."
+  }
+}
+
+variable "db_password" {
+  type      = string
+  sensitive = true  <span class="c"># no se muestra</span>
+}</pre></div>
+<div class="item"><p>Outputs, locals y data sources</p>
+<pre>locals {
+  nombre = "app-${var.env}"
+}
+
+data "aws_caller_identity" "actual" {}
+
+output "bucket_arn" {
+  value = aws_s3_bucket.logs.arn
+}</pre></div>
+<div class="item"><p>Varios recursos a la vez</p>
+<pre>resource "aws_iam_user" "equipo" {
+  for_each = toset(["ana", "luis", "dmaza"])
+  name     = each.key
+}
+
+resource "aws_instance" "web" {
+  count = var.env == "prod" ? 2 : 1
+  <span class="c"># ...</span>
+}</pre>
+<p class="small">Prefiere <code>for_each</code> sobre <code>count</code>: si quitas un elemento de la lista, <code>count</code> puede recrear los demás.</p></div>
+
+<h2>State</h2>
+<div class="item"><pre>terraform state list
+terraform state show aws_s3_bucket.logs
+terraform state mv aws_s3_bucket.a aws_s3_bucket.b
+terraform state rm aws_s3_bucket.logs  <span class="c"># deja de administrarlo</span>
+terraform output
+terraform output -json</pre></div>
+<div class="item"><p>Importar algo creado a mano</p>
+<pre>import {
+  to = aws_s3_bucket.legacy
+  id = "bucket-creado-a-mano"
+}</pre>
+<pre>terraform plan -generate-config-out=generado.tf</pre>
+<p class="small">El bloque <code>import</code> (Terraform 1.5+) se revisa en el plan como cualquier cambio, a diferencia del viejo <code>terraform import</code>.</p></div>
+
+<h2>Backend remoto</h2>
+<div class="item"><pre>terraform {
+  backend "s3" {
+    bucket       = "dajomar-tfstate"
+    key          = "app/prod.tfstate"
+    region       = "ca-central-1"
+    encrypt      = true  <span class="c"># cifrado en reposo</span>
+    use_lockfile = true  <span class="c"># bloqueo (1.10+)</span>
+  }
+}</pre>
+<p class="small">El <b>lock</b> evita que dos personas apliquen cambios a la vez y corrompan el state. En versiones anteriores a la 1.10 se usaba una tabla de DynamoDB.</p></div>
+
+<h2>Módulos y workspaces</h2>
+<div class="item"><pre>module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "5.8.1"  <span class="c"># versión fija</span>
+  name    = local.nombre
+  cidr    = "10.0.0.0/16"
+}</pre>
+<pre>terraform workspace list
+terraform workspace new staging
+terraform workspace select prod</pre>
+<p class="small">Para separar entornos con distintos permisos, carpetas o cuentas distintas son más seguras que los workspaces.</p></div>
+
+<h2>DevSecOps: secretos</h2>
+<div class="item"><table>
+<tr><td>✗ Nunca</td><td>Contraseñas o llaves escritas en <code>.tf</code> o <code>.tfvars</code> versionados.</td></tr>
+<tr><td>✓ Variables</td><td><code>TF_VAR_db_password</code> como variable de entorno desde el CI o un vault.</td></tr>
+<tr><td>✓ Gestores</td><td>Leer de AWS Secrets Manager, Azure Key Vault o HashiCorp Vault con un data source.</td></tr>
+<tr><td>✓ sensitive</td><td>Oculta el valor en la consola y los logs.</td></tr>
+<tr><td>⚠ State</td><td><code>sensitive</code> <b>no</b> cifra el state: ahí los secretos quedan en texto plano. Protege el backend.</td></tr>
+<tr><td>✓ OIDC</td><td>En CI, credenciales temporales de la nube en lugar de llaves fijas.</td></tr>
+</table></div>
+<div class="item"><p>.gitignore para Terraform</p>
+<pre>.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars  <span class="c"># salvo ejemplos</span>
+!example.tfvars
+tfplan
+crash.log</pre></div>
+
+<h2>DevSecOps: escaneo</h2>
+<div class="item"><pre>terraform fmt -check -recursive
+terraform validate
+tflint --recursive  <span class="c"># errores y malas prácticas</span>
+checkov -d .  <span class="c"># misconfigs de seguridad</span>
+trivy config .  <span class="c"># misconfigs + secretos</span>
+gitleaks detect  <span class="c"># secretos en el repo</span></pre>
+<p class="small">Hallazgos típicos: buckets públicos, security groups abiertos a <code>0.0.0.0/0</code>, cifrado desactivado, logs apagados, IAM con <code>"*"</code>.</p></div>
+<div class="item"><p>Escanear también el plan</p>
+<pre>terraform plan -out=tfplan
+terraform show -json tfplan &gt; plan.json
+checkov -f plan.json
+conftest test plan.json  <span class="c"># políticas OPA</span></pre></div>
+
+<h2>Pipeline de CI (GitHub Actions)</h2>
+<div class="item"><pre>name: terraform
+on: [pull_request]
+permissions:
+  id-token: write  <span class="c"># OIDC</span>
+  contents: read
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - run: terraform init -input=false
+      - run: terraform validate
+      - uses: bridgecrewio/checkov-action@master
+        with: { directory: . }
+      - run: terraform plan -input=false</pre>
+<p class="small">El <code>apply</code> va en otro job, solo en <code>main</code> y con aprobación manual (environment protegido).</p></div>
+
+<h2>OpenTofu y depuración</h2>
+<div class="item"><pre>tofu init ; tofu plan ; tofu apply  <span class="c"># mismo flujo</span>
+export TF_LOG=DEBUG  <span class="c"># logs detallados</span>
+export TF_LOG_PATH=./terraform.log
+terraform console  <span class="c"># probar expresiones</span>
+terraform graph | dot -Tpng &gt; grafo.png</pre>
+<p class="small"><b>OpenTofu</b> es el fork open source de Terraform (Linux Foundation). Usa los mismos comandos con <code>tofu</code> y agrega cifrado nativo del state.</p></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Nadie aplica desde su laptop en producción: todo cambio pasa por <b>pull request → fmt, validate y escaneo → plan revisado → apply automatizado</b>. Si alguien cambia algo a mano en la consola, <code>plan -refresh-only</code> lo detecta.</div>
+
+</div>

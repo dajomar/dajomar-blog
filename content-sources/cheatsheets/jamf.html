@@ -1,0 +1,157 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Jamf Pro<span>_</span></h1>
+    <div class="sub">Guía de atajos · administración de Macs</div>
+  </div></div>
+  <div class="prompt">admin@dajomar:~$ sudo jamf policy</div>
+</header>
+
+<div class="cols">
+
+<h2>Cómo funciona Jamf</h2>
+<div class="item"><p>Jamf gestiona los Mac por <b>dos canales</b> que trabajan juntos:</p>
+<table>
+<tr><th>Canal</th><th>Qué hace</th></tr>
+<tr><td>MDM (Apple)</td><td>Perfiles de configuración, comandos remotos (bloquear, borrar), apps del App Store. Usa APNs de Apple.</td></tr>
+<tr><td>Binario jamf</td><td>Políticas, scripts, paquetes, inventario. Corre en el Mac y hace check-in con el servidor.</td></tr>
+</table>
+<p class="small">Si fallan los perfiles, el problema suele estar en el MDM. Si fallan las políticas, revisa el binario <code>jamf</code>.</p></div>
+
+<h2>Conceptos clave</h2>
+<div class="item"><table>
+<tr><td>Policy</td><td>Acción a ejecutar: instalar, correr script, configurar.</td></tr>
+<tr><td>Config Profile</td><td>Ajustes de macOS vía MDM (Wi-Fi, FileVault, restricciones).</td></tr>
+<tr><td>Smart Group</td><td>Grupo dinámico por criterios (versión de macOS, app instalada).</td></tr>
+<tr><td>Static Group</td><td>Grupo manual: tú eliges los equipos.</td></tr>
+<tr><td>Scope</td><td>A quién aplica: <b>Targets</b>, <b>Limitations</b> y <b>Exclusions</b>.</td></tr>
+<tr><td>PreStage</td><td>Configuración de enrolamiento automático (ADE / Apple Business Manager).</td></tr>
+<tr><td>Ext. Attribute</td><td>Dato personalizado del inventario, calculado con un script.</td></tr>
+<tr><td>Self Service</td><td>Tienda interna donde el usuario instala apps y corre tareas.</td></tr>
+<tr><td>Check-in</td><td>El Mac pregunta al servidor si hay políticas pendientes.</td></tr>
+<tr><td>Recon</td><td>Envío de inventario del Mac a Jamf Pro.</td></tr>
+</table></div>
+
+<h2>Binario jamf (en el Mac)</h2>
+<div class="item"><p>Conexión y estado</p>
+<pre>sudo jamf checkJSSConnection  <span class="c"># ¿llega al servidor?</span>
+jamf version
+sudo jamf help
+sudo jamf help policy  <span class="c"># ayuda de un verbo</span></pre></div>
+<div class="item"><p>Políticas</p>
+<pre>sudo jamf policy  <span class="c"># check-in manual</span>
+sudo jamf policy -event instalar_zoom  <span class="c"># trigger custom</span>
+sudo jamf policy -id 123  <span class="c"># una política</span>
+sudo jamf policy -verbose  <span class="c"># con detalle</span>
+sudo jamf flushPolicyHistory  <span class="c"># reinicia "once per"</span></pre></div>
+<div class="item"><p>Inventario y gestión</p>
+<pre>sudo jamf recon  <span class="c"># envía inventario</span>
+sudo jamf recon -endUsername dmaza
+sudo jamf manage  <span class="c"># reaplica el framework</span>
+sudo jamf removeFramework  <span class="c"># ⚠ quita Jamf del Mac</span></pre></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Después de cambiar algo en Jamf Pro, no esperes al check-in: corre <code>sudo jamf policy</code> para las políticas y <code>sudo jamf recon</code> para que los Smart Groups se actualicen al momento.</div>
+
+<h2>Perfiles y MDM</h2>
+<div class="item"><pre>profiles status -type enrollment  <span class="c"># ¿enrolado?</span>
+sudo profiles show -type enrollment  <span class="c"># info ADE</span>
+sudo profiles renew -type enrollment  <span class="c"># re-enrolar ADE</span>
+sudo profiles list  <span class="c"># perfiles instalados</span></pre>
+<p class="small"><b>Enrolled via DEP: Yes</b> y <b>MDM enrollment: Yes (User Approved)</b> es el estado sano. Si el MDM no está aprobado por el usuario, muchos perfiles no se aplican.</p></div>
+
+<h2>Logs</h2>
+<div class="item"><pre>tail -f /var/log/jamf.log  <span class="c"># políticas en vivo</span>
+grep -i error /var/log/jamf.log
+log stream --info --predicate \
+  'subsystem == "com.apple.ManagedClient"'  <span class="c"># MDM</span>
+log show --last 1h --predicate \
+  'process == "mdmclient"'</pre>
+<p class="small">En Jamf Pro: <b>Computers → equipo → History</b> muestra los logs de políticas y comandos MDM pendientes o fallidos.</p></div>
+
+<h2>Políticas: triggers y frecuencia</h2>
+<div class="item"><table>
+<tr><th>Trigger</th><th>Cuándo corre</th></tr>
+<tr><td>Recurring Check-in</td><td>En cada check-in periódico</td></tr>
+<tr><td>Enrollment Complete</td><td>Al terminar el enrolamiento</td></tr>
+<tr><td>Login / Startup</td><td>Al iniciar sesión / al encender</td></tr>
+<tr><td>Network State Change</td><td>Cambia la red o la IP</td></tr>
+<tr><td>Custom</td><td>Con <code>jamf policy -event nombre</code></td></tr>
+<tr><td>Self Service</td><td>Cuando el usuario la ejecuta</td></tr>
+</table>
+<table>
+<tr><th>Frecuencia</th><th>Uso típico</th></tr>
+<tr><td>Once per computer</td><td>Instalaciones iniciales</td></tr>
+<tr><td>Once per user per comp.</td><td>Ajustes por usuario</td></tr>
+<tr><td>Once every day/week</td><td>Inventario, mantenimiento</td></tr>
+<tr><td>Ongoing</td><td>Self Service o triggers custom</td></tr>
+</table>
+<p class="small">⚠ <b>Ongoing</b> + <b>Recurring Check-in</b> = la política corre cada 15 minutos (o lo que dure tu check-in) para siempre.</p></div>
+
+<h2>Scripts en Jamf</h2>
+<div class="item"><table>
+<tr><td>$1</td><td>Punto de montaje del disco de destino</td></tr>
+<tr><td>$2</td><td>Nombre del equipo</td></tr>
+<tr><td>$3</td><td>Usuario con sesión (si aplica)</td></tr>
+<tr><td>$4 a $11</td><td>Parámetros personalizados de la política</td></tr>
+</table>
+<pre>#!/bin/bash
+app_name="$4"  <span class="c"># parámetro 4</span>
+usuario=$(stat -f%Su /dev/console)  <span class="c"># usuario real</span>
+if [[ -z "$app_name" ]]; then
+  echo "Falta el parámetro 4"; exit 1
+fi
+echo "Instalando $app_name para $usuario"
+exit 0</pre>
+<p class="small">El código de salida importa: <code>exit 0</code> = Completed · otro valor = Failed en los logs.</p></div>
+<div class="item"><p>Extension Attribute (dato de inventario)</p>
+<pre>#!/bin/bash
+estado=$(fdesetup status | head -1)
+echo "&lt;result&gt;$estado&lt;/result&gt;"</pre>
+<p class="small">Jamf guarda lo que esté entre <code>&lt;result&gt;</code>. Se actualiza con cada <code>recon</code>.</p></div>
+
+<h2>Comandos macOS para soporte</h2>
+<div class="item"><p>Equipo y usuarios</p>
+<pre>system_profiler SPHardwareDataType  <span class="c"># modelo, serial</span>
+sw_vers  <span class="c"># versión de macOS</span>
+scutil --get ComputerName
+sudo scutil --set ComputerName "MAC-DMAZA"
+stat -f%Su /dev/console  <span class="c"># quién está logueado</span>
+dscl . -list /Users | grep -v '^_'
+id dmaza  <span class="c"># grupos (admin = 80)</span></pre></div>
+<div class="item"><p>Seguridad</p>
+<pre>fdesetup status  <span class="c"># FileVault</span>
+sudo fdesetup list  <span class="c"># usuarios habilitados</span>
+sysadminctl -secureTokenStatus dmaza
+spctl --status  <span class="c"># Gatekeeper</span>
+csrutil status  <span class="c"># SIP</span>
+<span class="c"># firewall</span>
+sudo /usr/libexec/ApplicationFirewall/\
+socketfilterfw --getglobalstate</pre></div>
+<div class="item"><p>Software y paquetes</p>
+<pre>softwareupdate -l  <span class="c"># actualizaciones</span>
+sudo softwareupdate -ia  <span class="c"># instalar todas</span>
+sudo installer -pkg app.pkg -target /
+pkgutil --pkgs | grep -i zoom
+pkgutil --pkg-info com.ejemplo.app
+mdls -name kMDItemVersion /Applications/Zoom.us.app</pre></div>
+<div class="item"><p>Servicios</p>
+<pre>sudo launchctl list | grep -i jamf
+ls /Library/LaunchDaemons/ | grep jamf</pre></div>
+
+<h2>API de Jamf Pro</h2>
+<div class="item"><p>Con un <b>API Client</b> (Settings → API Roles and Clients):</p>
+<pre>url="https://tuempresa.jamfcloud.com"
+token=$(curl -s -X POST "$url/api/oauth/token" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=$CLIENT_ID" \
+  -d "client_secret=$CLIENT_SECRET" \
+  | jq -r .access_token)
+
+curl -s -H "Authorization: Bearer $token" \
+  "$url/api/v1/computers-inventory?page-size=10"</pre>
+<p class="small">Da al API Client solo los permisos que necesita y nunca guardes el secreto dentro de un script en Jamf. Documentación en <code>/api/doc</code> de tu instancia.</p></div>
+
+<div class="tip"><b class="t">Pro Tip: un Mac no recibe políticas</b>
+<code>sudo jamf checkJSSConnection</code> → revisa <code>/var/log/jamf.log</code> → <code>profiles status -type enrollment</code> → <code>sudo jamf manage</code> → <code>sudo jamf recon</code> → confirma en Jamf Pro que el equipo está en el <b>scope</b> y no en una exclusión.</div>
+
+</div>

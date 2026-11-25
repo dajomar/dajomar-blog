@@ -1,0 +1,160 @@
+<header>
+  <div class="brand">%%ICON%%<div>
+    <h1>Redes<span>_</span></h1>
+    <div class="sub">Guía de atajos · OSI, subnetting y diagnóstico</div>
+  </div></div>
+  <div class="prompt">user@dajomar:~$ ping 8.8.8.8</div>
+</header>
+
+<div class="cols">
+
+<h2>Modelo OSI y TCP/IP</h2>
+<div class="item"><table>
+<tr><th>Capa OSI</th><th>Qué hace</th><th>Ejemplos</th></tr>
+<tr><td>7 Aplicación</td><td>Servicios al usuario</td><td>HTTP, DNS, SSH</td></tr>
+<tr><td>6 Presentación</td><td>Formato y cifrado</td><td>TLS, JPEG</td></tr>
+<tr><td>5 Sesión</td><td>Abre y cierra sesiones</td><td>RPC, NetBIOS</td></tr>
+<tr><td>4 Transporte</td><td>Puertos, segmentos</td><td>TCP, UDP</td></tr>
+<tr><td>3 Red</td><td>Direcciones IP, rutas</td><td>IP, ICMP · router</td></tr>
+<tr><td>2 Enlace</td><td>MAC, tramas</td><td>Ethernet, ARP · switch</td></tr>
+<tr><td>1 Física</td><td>Bits por el medio</td><td>Cable, fibra, Wi-Fi</td></tr>
+</table>
+<p class="small"><b>TCP/IP</b> resume las capas 5-7 en <b>Aplicación</b> y las capas 1-2 en <b>Acceso a red</b>. Para recordar OSI de abajo hacia arriba: <i>Física, Enlace, Red, Transporte, Sesión, Presentación, Aplicación</i>.</p></div>
+
+<h2>Direccionamiento IPv4</h2>
+<div class="item"><table>
+<tr><th>Rango</th><th>Uso</th></tr>
+<tr><td>10.0.0.0/8</td><td>Privada (empresas grandes)</td></tr>
+<tr><td>172.16.0.0/12</td><td>Privada (172.16 a 172.31)</td></tr>
+<tr><td>192.168.0.0/16</td><td>Privada (hogar, oficinas)</td></tr>
+<tr><td>127.0.0.0/8</td><td>Loopback (<code>127.0.0.1</code>)</td></tr>
+<tr><td>169.254.0.0/16</td><td>APIPA: el DHCP no respondió</td></tr>
+<tr><td>0.0.0.0</td><td>Cualquier dirección / ruta por defecto</td></tr>
+</table>
+<p class="small">Una IP privada no sale a internet directamente: el router hace <b>NAT</b> y la traduce a la IP pública.</p></div>
+
+<h2>Subnetting (CIDR)</h2>
+<div class="item"><table>
+<tr><th>CIDR</th><th>Máscara</th><th>Hosts útiles</th></tr>
+<tr><td>/8</td><td>255.0.0.0</td><td>16 777 214</td></tr>
+<tr><td>/16</td><td>255.255.0.0</td><td>65 534</td></tr>
+<tr><td>/24</td><td>255.255.255.0</td><td>254</td></tr>
+<tr><td>/25</td><td>255.255.255.128</td><td>126</td></tr>
+<tr><td>/26</td><td>255.255.255.192</td><td>62</td></tr>
+<tr><td>/27</td><td>255.255.255.224</td><td>30</td></tr>
+<tr><td>/28</td><td>255.255.255.240</td><td>14</td></tr>
+<tr><td>/29</td><td>255.255.255.248</td><td>6</td></tr>
+<tr><td>/30</td><td>255.255.255.252</td><td>2 (enlaces punto a punto)</td></tr>
+</table>
+<p><b>Fórmula:</b> hosts = 2<sup>(32 − CIDR)</sup> − 2. Se restan la dirección de <b>red</b> y la de <b>broadcast</b>.</p></div>
+<div class="item"><p>Ejemplo: 192.168.10.70/26</p>
+<pre>Salto de bloque: 256 - 192 = 64
+Redes: .0  .64  .128  .192
+Red:        192.168.10.64
+Primer host 192.168.10.65
+Último host 192.168.10.126
+Broadcast:  192.168.10.127</pre></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Para cualquier máscara, el <b>tamaño del bloque</b> es 256 menos el último octeto que no es 0 ni 255. Las subredes empiezan en múltiplos de ese número.</div>
+
+<h2>IPv6 en 1 minuto</h2>
+<div class="item"><table>
+<tr><td>::1</td><td>Loopback</td></tr>
+<tr><td>fe80::/10</td><td>Link-local (solo en el segmento)</td></tr>
+<tr><td>fc00::/7</td><td>Únicas locales (equivale a privadas)</td></tr>
+<tr><td>2000::/3</td><td>Globales (públicas)</td></tr>
+<tr><td>/64</td><td>Tamaño estándar de una subred</td></tr>
+</table>
+<p class="small">Se abrevia quitando ceros a la izquierda y usando <code>::</code> una sola vez: <code>2001:0db8:0000:0000::0001</code> → <code>2001:db8::1</code>.</p></div>
+
+<h2>TCP vs UDP</h2>
+<div class="item"><table>
+<tr><th></th><th>TCP</th><th>UDP</th></tr>
+<tr><td>Conexión</td><td>Sí (3-way handshake)</td><td>No</td></tr>
+<tr><td>Fiable</td><td>Reenvía lo perdido, en orden</td><td>No garantiza entrega</td></tr>
+<tr><td>Velocidad</td><td>Más lento</td><td>Más rápido</td></tr>
+<tr><td>Uso</td><td>Web, correo, SSH</td><td>DNS, VoIP, streaming, DHCP</td></tr>
+</table>
+<p class="small"><b>Handshake:</b> SYN → SYN-ACK → ACK. Muchos SYN sin respuesta suelen indicar un escaneo o un SYN flood.</p></div>
+
+<h2>Puertos que debes saber</h2>
+<div class="item"><table>
+<tr><th>Puerto</th><th>Servicio</th><th>Puerto</th><th>Servicio</th></tr>
+<tr><td>20/21</td><td>FTP</td><td>389 / 636</td><td>LDAP / LDAPS</td></tr>
+<tr><td>22</td><td>SSH, SFTP</td><td>443</td><td>HTTPS</td></tr>
+<tr><td>23</td><td>Telnet ⚠</td><td>445</td><td>SMB</td></tr>
+<tr><td>25 / 587</td><td>SMTP</td><td>514</td><td>Syslog</td></tr>
+<tr><td>53</td><td>DNS</td><td>993</td><td>IMAPS</td></tr>
+<tr><td>67/68</td><td>DHCP</td><td>1433</td><td>MS SQL</td></tr>
+<tr><td>80</td><td>HTTP</td><td>3306</td><td>MySQL</td></tr>
+<tr><td>88</td><td>Kerberos</td><td>3389</td><td>RDP</td></tr>
+<tr><td>123</td><td>NTP</td><td>5432</td><td>PostgreSQL</td></tr>
+<tr><td>161/162</td><td>SNMP</td><td>8080</td><td>HTTP alterno</td></tr>
+</table>
+<p class="small">0-1023 bien conocidos · 1024-49151 registrados · 49152-65535 dinámicos.</p></div>
+
+<h2>Protocolos clave</h2>
+<div class="item"><p><b>DHCP</b> entrega IP, máscara, gateway y DNS en 4 pasos (<b>DORA</b>): Discover → Offer → Request → Ack.</p>
+<p><b>ARP</b> traduce una IP a su dirección MAC dentro de la red local.</p>
+<p><b>DNS</b> traduce nombres a IPs. Registros principales:</p>
+<table>
+<tr><td>A / AAAA</td><td>Nombre → IPv4 / IPv6</td></tr>
+<tr><td>CNAME</td><td>Alias hacia otro nombre</td></tr>
+<tr><td>MX</td><td>Servidor de correo del dominio</td></tr>
+<tr><td>TXT</td><td>Texto: SPF, DKIM, DMARC, verificaciones</td></tr>
+<tr><td>NS</td><td>Servidores autoritativos</td></tr>
+<tr><td>PTR</td><td>IP → nombre (DNS inverso)</td></tr>
+</table></div>
+
+<h2>Comandos: Windows vs Linux</h2>
+<div class="item"><table>
+<tr><th>Tarea</th><th>Windows</th><th>Linux</th></tr>
+<tr><td>Ver IP</td><td><code>ipconfig /all</code></td><td><code>ip a</code></td></tr>
+<tr><td>Gateway</td><td><code>route print</code></td><td><code>ip r</code></td></tr>
+<tr><td>Ruta</td><td><code>tracert</code></td><td><code>traceroute</code></td></tr>
+<tr><td>DNS</td><td><code>nslookup</code></td><td><code>dig</code></td></tr>
+<tr><td>Puertos</td><td><code>netstat -ano</code></td><td><code>ss -tulpn</code></td></tr>
+<tr><td>Tabla ARP</td><td><code>arp -a</code></td><td><code>ip neigh</code></td></tr>
+<tr><td>Renovar IP</td><td><code>ipconfig /renew</code></td><td><code>dhclient -r; dhclient</code></td></tr>
+<tr><td>Vaciar DNS</td><td><code>ipconfig /flushdns</code></td><td><code>resolvectl flush-caches</code></td></tr>
+<tr><td>Probar puerto</td><td><code>Test-NetConnection</code></td><td><code>nc -zv</code></td></tr>
+</table>
+<pre>Test-NetConnection 10.0.0.5 -Port 443
+dig MX dajomar.com +short
+dig -x 8.8.8.8  <span class="c"># DNS inverso</span>
+mtr -rw google.com  <span class="c"># traceroute + ping</span></pre></div>
+
+<h2>Cisco IOS básico</h2>
+<div class="item"><p>Modos: <code>&gt;</code> usuario · <code>#</code> privilegiado · <code>(config)#</code> configuración</p>
+<pre>enable
+configure terminal
+hostname SW1
+interface g0/1
+ description Enlace a R1
+ ip address 192.168.1.1 255.255.255.0
+ no shutdown
+exit
+copy running-config startup-config</pre></div>
+<div class="item"><p>VLANs y puertos</p>
+<pre>vlan 10
+ name VENTAS
+interface f0/5
+ switchport mode access
+ switchport access vlan 10
+interface g0/1
+ switchport mode trunk</pre></div>
+<div class="item"><p>Verificar</p>
+<pre>show ip interface brief
+show running-config
+show vlan brief
+show interfaces trunk
+show ip route
+show mac address-table
+show cdp neighbors</pre>
+<p class="small"><b>Access:</b> lleva una sola VLAN (equipos finales). <b>Trunk:</b> lleva varias VLANs etiquetadas (entre switches y routers).</p></div>
+
+<div class="tip"><b class="t">Pro Tip:</b>
+Diagnostica de abajo hacia arriba: ¿cable o Wi-Fi conectado? → ¿tengo IP o es 169.254? → <code>ping</code> al gateway → <code>ping 8.8.8.8</code> → <code>nslookup google.com</code>. Si llega al 8.8.8.8 pero no resuelve nombres, el problema es DNS.</div>
+
+</div>
