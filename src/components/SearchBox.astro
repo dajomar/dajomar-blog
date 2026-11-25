@@ -126,84 +126,84 @@
   }
 </style>
 
-<script>
-  let pagefind: any = null;
+<script is:inline>
+  (function() {
+    var pagefind = null;
+    var trigger = document.getElementById('search-trigger');
+    var overlay = document.getElementById('search-overlay');
+    var input = document.getElementById('search-input');
+    var results = document.getElementById('search-results');
 
-  const trigger = document.getElementById('search-trigger');
-  const overlay = document.getElementById('search-overlay');
-  const input = document.getElementById('search-input') as HTMLInputElement | null;
-  const results = document.getElementById('search-results');
-
-  function open() {
-    overlay?.removeAttribute('hidden');
-    input?.focus();
-    document.body.style.overflow = 'hidden';
-  }
-
-  function close() {
-    overlay?.setAttribute('hidden', '');
-    document.body.style.overflow = '';
-    if (input) input.value = '';
-    if (results) results.innerHTML = '';
-  }
-
-  trigger?.addEventListener('click', open);
-
-  overlay?.addEventListener('click', (e) => {
-    if (e.target === overlay) close();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === '/' && !overlay?.hasAttribute('hidden') === false) {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-      e.preventDefault();
-      open();
+    function open() {
+      if (overlay) overlay.removeAttribute('hidden');
+      if (input) input.focus();
+      document.body.style.overflow = 'hidden';
     }
-    if (e.key === 'Escape' && !overlay?.hasAttribute('hidden')) {
-      close();
+
+    function close() {
+      if (overlay) overlay.setAttribute('hidden', '');
+      document.body.style.overflow = '';
+      if (input) input.value = '';
+      if (results) results.innerHTML = '';
     }
-  });
 
-  async function loadPagefind() {
-    if (pagefind) return pagefind;
-    try {
-      pagefind = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
-      await pagefind.init();
-    } catch {
-      // Pagefind not available in dev mode
-      pagefind = null;
+    if (trigger) trigger.addEventListener('click', open);
+
+    if (overlay) overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) close();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === '/' && overlay && overlay.hasAttribute('hidden')) {
+        var tag = e.target && e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        open();
+      }
+      if (e.key === 'Escape' && overlay && !overlay.hasAttribute('hidden')) {
+        close();
+      }
+    });
+
+    async function loadPagefind() {
+      if (pagefind) return pagefind;
+      try {
+        pagefind = await import('/pagefind/pagefind.js');
+        await pagefind.init();
+      } catch (err) {
+        pagefind = null;
+      }
+      return pagefind;
     }
-    return pagefind;
-  }
 
-  let debounceTimer: ReturnType<typeof setTimeout>;
+    var debounceTimer;
 
-  input?.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      const query = input.value.trim();
-      if (!query || !results) {
-        if (results) results.innerHTML = '';
-        return;
-      }
+    if (input) input.addEventListener('input', function() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async function() {
+        var query = input.value.trim();
+        if (!query || !results) {
+          if (results) results.innerHTML = '';
+          return;
+        }
 
-      const pf = await loadPagefind();
-      if (!pf) {
-        results.innerHTML = '<div class="no-results">La búsqueda solo está disponible en el sitio construido.</div>';
-        return;
-      }
+        var pf = await loadPagefind();
+        if (!pf) {
+          results.innerHTML = '<div class="no-results">La busqueda solo esta disponible en el sitio construido.</div>';
+          return;
+        }
 
-      const search = await pf.search(query);
-      if (search.results.length === 0) {
-        results.innerHTML = '<div class="no-results">Sin resultados para "' + query + '"</div>';
-        return;
-      }
+        var search = await pf.search(query);
+        if (search.results.length === 0) {
+          results.innerHTML = '<div class="no-results">Sin resultados para "' + query + '"</div>';
+          return;
+        }
 
-      const items = await Promise.all(search.results.slice(0, 8).map((r: any) => r.data()));
-      results.innerHTML = items.map((item: any) =>
-        `<a href="${item.url}"><div class="title">${item.meta?.title || item.url}</div><div class="excerpt">${item.excerpt}</div></a>`
-      ).join('');
-    }, 200);
-  });
+        var items = await Promise.all(search.results.slice(0, 8).map(function(r) { return r.data(); }));
+        results.innerHTML = items.map(function(item) {
+          return '<a href="' + item.url + '"><div class="title">' + (item.meta && item.meta.title || item.url) + '</div><div class="excerpt">' + item.excerpt + '</div></a>';
+        }).join('');
+      }, 200);
+    });
+  })();
 </script>
