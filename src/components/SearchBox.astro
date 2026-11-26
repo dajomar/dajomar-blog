@@ -126,84 +126,83 @@
   }
 </style>
 
-<script is:inline>
-  (function() {
-    var pagefind = null;
-    var trigger = document.getElementById('search-trigger');
-    var overlay = document.getElementById('search-overlay');
-    var input = document.getElementById('search-input');
-    var results = document.getElementById('search-results');
+<script is:inline type="module">
+  var pagefind = null;
+  var trigger = document.getElementById('search-trigger');
+  var overlay = document.getElementById('search-overlay');
+  var input = document.getElementById('search-input');
+  var results = document.getElementById('search-results');
 
-    function open() {
-      if (overlay) overlay.removeAttribute('hidden');
-      if (input) input.focus();
-      document.body.style.overflow = 'hidden';
+  function open() {
+    if (overlay) overlay.removeAttribute('hidden');
+    if (input) input.focus();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function close() {
+    if (overlay) overlay.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+    if (input) input.value = '';
+    if (results) results.innerHTML = '';
+  }
+
+  if (trigger) trigger.addEventListener('click', open);
+
+  if (overlay) overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) close();
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === '/' && overlay && overlay.hasAttribute('hidden')) {
+      var tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      e.preventDefault();
+      open();
     }
-
-    function close() {
-      if (overlay) overlay.setAttribute('hidden', '');
-      document.body.style.overflow = '';
-      if (input) input.value = '';
-      if (results) results.innerHTML = '';
+    if (e.key === 'Escape' && overlay && !overlay.hasAttribute('hidden')) {
+      close();
     }
+  });
 
-    if (trigger) trigger.addEventListener('click', open);
-
-    if (overlay) overlay.addEventListener('click', function(e) {
-      if (e.target === overlay) close();
-    });
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === '/' && overlay && overlay.hasAttribute('hidden')) {
-        var tag = e.target && e.target.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-        e.preventDefault();
-        open();
-      }
-      if (e.key === 'Escape' && overlay && !overlay.hasAttribute('hidden')) {
-        close();
-      }
-    });
-
-    async function loadPagefind() {
-      if (pagefind) return pagefind;
-      try {
-        pagefind = await import('/pagefind/pagefind.js');
-        await pagefind.init();
-      } catch (err) {
-        pagefind = null;
-      }
-      return pagefind;
+  async function loadPagefind() {
+    if (pagefind) return pagefind;
+    try {
+      pagefind = await import('/pagefind/pagefind.js');
+      await pagefind.init();
+    } catch (err) {
+      console.error('Pagefind error:', err);
+      pagefind = null;
     }
+    return pagefind;
+  }
 
-    var debounceTimer;
+  var debounceTimer;
 
-    if (input) input.addEventListener('input', function() {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(async function() {
-        var query = input.value.trim();
-        if (!query || !results) {
-          if (results) results.innerHTML = '';
-          return;
-        }
+  if (input) input.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async function() {
+      var query = input.value.trim();
+      if (!query || !results) {
+        if (results) results.innerHTML = '';
+        return;
+      }
 
-        var pf = await loadPagefind();
-        if (!pf) {
-          results.innerHTML = '<div class="no-results">La busqueda solo esta disponible en el sitio construido.</div>';
-          return;
-        }
+      var pf = await loadPagefind();
+      if (!pf) {
+        results.innerHTML = '<div class="no-results">La busqueda solo esta disponible en el sitio construido.</div>';
+        return;
+      }
 
-        var search = await pf.search(query);
-        if (search.results.length === 0) {
-          results.innerHTML = '<div class="no-results">Sin resultados para "' + query + '"</div>';
-          return;
-        }
+      var search = await pf.search(query);
+      if (search.results.length === 0) {
+        results.innerHTML = '<div class="no-results">Sin resultados para "' + query + '"</div>';
+        return;
+      }
 
-        var items = await Promise.all(search.results.slice(0, 8).map(function(r) { return r.data(); }));
-        results.innerHTML = items.map(function(item) {
-          return '<a href="' + item.url + '"><div class="title">' + (item.meta && item.meta.title || item.url) + '</div><div class="excerpt">' + item.excerpt + '</div></a>';
-        }).join('');
-      }, 200);
-    });
-  })();
+      var items = await Promise.all(search.results.slice(0, 8).map(function(r) { return r.data(); }));
+      results.innerHTML = items.map(function(item) {
+        return '<a href="' + item.url + '"><div class="title">' + (item.meta && item.meta.title || item.url) + '</div><div class="excerpt">' + item.excerpt + '</div></a>';
+      }).join('');
+    }, 200);
+  });
 </script>
