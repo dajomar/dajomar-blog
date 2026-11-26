@@ -2,15 +2,48 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE } from '../config';
 ---
-<BaseLayout title="Sobre mí — dajomar" description={`Sobre ${SITE.author}, autor de dajomar.`}>
-  <div class="content-width" style="padding-top: 40px; padding-bottom: 72px;">
+<BaseLayout title="Sobre mí — dajomar" description="Quién escribe dajomar y por qué existe este sitio.">
+  <div class="content-width sobre-mi-page">
     <h1 class="page-title">Sobre mí</h1>
-    <p>[ESCRIBIR]</p>
-    <p>Más en <a href={SITE.personalSite}>{SITE.personalSite.replace('https://', '')}</a>.</p>
+    <p class="intro">Soy David Maza, ingeniero de sistemas. Trabajo en TI en Montreal.</p>
+
+    <section class="section">
+      <h2>De dónde vengo</h2>
+      <p>Empecé en Colombia, donde pasé más de siete años en ingeniería de datos: procesos ETL, PL/SQL sobre Oracle, scripts en Bash y jobs nocturnos en producción. Trabajo de backend, de ese que nadie ve cuando funciona y todos notan cuando falla.</p>
+      <p>En 2022 llegué a Montreal y empecé de nuevo. Hoy trabajo en operaciones de TI, en administración de sistemas, y me encargo de la parte preventiva de la seguridad. Ahora estoy llevando ese rol hacia DevSecOps.</p>
+    </section>
+
+    <section class="section">
+      <h2>Por qué existe este sitio</h2>
+      <p>dajomar es mi cuaderno de estudio. Aquí guardo los cheat sheets que hago para no olvidar los comandos que no uso todos los días, documento mi <a href="/homelab/">homelab</a> y escribo lo que aprendo, sobre todo cuando algo se rompe.</p>
+      <p>Lo escribo en español porque es mi idioma, y porque en español hay poco material práctico sobre infraestructura, Jamf o DevSecOps. Si te sirve, mejor.</p>
+    </section>
+
+    <section class="section">
+      <h2>Lo que me mueve</h2>
+      <ul>
+        <li><strong>Entender cómo funcionan las cosas por dentro</strong>, no solo seguir tutoriales.</li>
+        <li><strong>La seguridad como constante:</strong> cada proyecto, por pequeño que sea, con buenas prácticas desde el inicio.</li>
+        <li><strong>Documentar:</strong> si no está escrito, no lo aprendí.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Dónde encontrarme</h2>
+      <ul class="links-list">
+        <li>Portafolio y CV: <a href={SITE.personalSite}>{SITE.personalSite.replace('https://', '')}</a></li>
+        <li><a href={SITE.github}>GitHub</a> · <a href={SITE.linkedin}>LinkedIn</a></li>
+      </ul>
+      <p>Hablo español, francés e inglés.</p>
+    </section>
   </div>
 </BaseLayout>
 
 <style>
+  .sobre-mi-page {
+    padding-top: 40px;
+    padding-bottom: 72px;
+  }
   .page-title {
     font-size: 34px;
     line-height: 40px;
@@ -19,5 +52,39 @@ import { SITE } from '../config';
     margin: 0 0 var(--space-6);
     padding-bottom: var(--space-1);
     border-bottom: 1px solid var(--line);
+  }
+  .intro {
+    font-size: 17px;
+    line-height: 28px;
+    color: var(--ink-muted);
+    margin: 0 0 var(--space-8);
+    max-width: 620px;
+  }
+  .section {
+    margin-bottom: var(--space-10);
+  }
+  .section h2 {
+    font-size: 26px;
+    line-height: 32px;
+    font-weight: 300;
+    color: var(--heading);
+    margin: 0 0 var(--space-3);
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--line);
+  }
+  .section p {
+    margin: var(--space-2) 0;
+  }
+  .section ul {
+    padding-left: var(--space-6);
+    margin: var(--space-2) 0;
+  }
+  .section li {
+    margin: var(--space-1) 0;
+    line-height: 26px;
+  }
+  .links-list {
+    list-style: none;
+    padding-left: 0;
   }
 </style>
