@@ -1,0 +1,91 @@
+---
+title: "Cómo este sitio se despliega solo con Cloudflare Pages"
+description: "Push a main y listo: build automático con Astro, Pagefind y deploy en Cloudflare Pages. Sin servidor, sin scripts manuales."
+date: 2026-11-25
+tags: ["devops", "cloudflare"]
+draft: false
+---
+
+import Callout from '../../components/Callout.astro';
+
+Quería que este sitio se desplegara solo. Que cada cambio que hago en el código llegue al sitio publicado sin que yo tenga que correr nada a mano. Lo logré con Cloudflare Pages y un repositorio en GitHub.
+
+## El flujo
+
+El pipeline es simple:
+
+1. Hago cambios en el código en una rama nueva.
+2. Creo un pull request hacia `main` y lo reviso (sí, lo apruebo yo mismo 😅, pero quiero mantener un flujo real).
+3. Al mergear a `main`, Cloudflare Pages detecta el push automáticamente.
+4. Clona el repositorio, corre `npm install` y ejecuta el build.
+5. Publica el contenido de `dist/` en su CDN global.
+
+No hay servidor que administrar, no hay CI/CD que configurar aparte. Cloudflare Pages hace todo.
+
+## La configuración del build
+
+El sitio está hecho con Astro y usa Pagefind para la búsqueda. El comando de build encadena las dos cosas:
+
+```bash
+astro build && npx pagefind --site dist
+```
+
+Astro genera el HTML estático y Pagefind indexa el contenido para que el buscador funcione en el sitio publicado.
+
+En Cloudflare Pages, la configuración del proyecto queda así:
+
+| Campo | Valor |
+| --- | --- |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| `NODE_VERSION` | `22` |
+
+La variable `NODE_VERSION` es necesaria porque Astro 7 requiere Node.js 22 o superior. Sin ella, el build falla.
+
+## Pages vs Workers
+
+Cloudflare tiene dos productos para desplegar código: **Pages** y **Workers**. Al crear el proyecto me apareció el flujo de Workers por defecto (con `npx wrangler deploy`), que no era lo que necesitaba.
+
+La diferencia:
+
+- **Pages**: para sitios estáticos o con SSR ligero. Conectas el repositorio, Cloudflare hace el build y sirve los archivos. Deploy automático en cada push.
+- **Workers**: funciones serverless en el edge. Para APIs, lógica de backend, manipular requests al vuelo. Más configuración para un caso como este.
+
+Para un sitio estático, Pages es lo correcto.
+
+<Callout type="tip">
+Si al crear el proyecto en Cloudflare ves campos como "Deploy command" con `npx wrangler deploy`, estás en el flujo de Workers. Busca el enlace "Continue to Pages" para cambiar al flujo correcto.
+</Callout>
+
+## El dominio
+
+Cloudflare Pages asigna un subdominio `.pages.dev` automáticamente. Para usar un dominio propio:
+
+1. En el proyecto de Pages → **Custom domains** → **Set up a custom domain**.
+2. Escribes el dominio. Si el DNS ya está en Cloudflare, crea el registro CNAME automáticamente.
+3. El certificado SSL se emite en minutos.
+
+Como mi DNS ya estaba en Cloudflare, la verificación fue automática.
+
+## Las cabeceras de seguridad
+
+Cloudflare Pages lee un archivo `public/_headers` del repositorio y aplica las cabeceras HTTP que definas. No hay que configurar nada en el dashboard. Las que tengo puestas:
+
+```text
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' static.cloudflareinsights.com; font-src 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+## Lo que falta
+
+El deploy automático ya funciona, pero el pipeline todavía no tiene seguridad integrada. Lo que quiero agregar:
+
+- **Escaneo de secretos**: que el pipeline detecte si accidentalmente subo una API key o un token.
+- **Escaneo de vulnerabilidades**: revisar las dependencias en cada build.
+- **Preview de ramas**: Cloudflare Pages genera un deploy de preview para cada pull request. Ya lo estoy usando para revisar cambios antes de mergear a `main`.
+
+Cuando tenga eso, va a ser un pipeline de CI/CD con seguridad integrada de verdad. Por ahora, es un buen primer paso: el sitio se despliega solo, con cada push, sin intervención manual.

@@ -5,6 +5,7 @@ import TerminalPrompt from '../components/TerminalPrompt.astro';
 <BaseLayout title="Homelab — dajomar" description="Los servidores, servicios y laboratorios que uso para practicar administración de sistemas, seguridad y DevSecOps.">
   <div class="content-width homelab-page">
     <h1 class="page-title">Mi homelab</h1>
+    <p class="last-updated">Última actualización: noviembre 2026</p>
     <p class="intro">Mi homelab es donde practico lo que estudio. Todo lo que aparece en mis cheat sheets lo he usado (o roto) aquí primero: Linux, redes, Docker, virtualización y seguridad.</p>
 
     <section class="section">
@@ -71,10 +72,17 @@ import TerminalPrompt from '../components/TerminalPrompt.astro';
     </section>
 
     <section class="section">
+      <h2>Lo que ya funciona</h2>
+      <ul>
+        <li><strong>Pipeline de CI/CD:</strong> este sitio se construye y se despliega solo con Cloudflare Pages. Cada push a <code>main</code> dispara build y deploy automático.</li>
+      </ul>
+    </section>
+
+    <section class="section">
       <h2>Lo que viene</h2>
       <p>Quiero seguir aprendiendo y expandiendo lo que sé de infraestructura, seguridad y DevOps. El homelab es el lugar para eso: probar, romper, entender y documentar.</p>
       <ul>
-        <li><strong>Un pipeline de CI/CD con seguridad integrada:</strong> este sitio se construye y se despliega solo, con escaneo de secretos y vulnerabilidades en cada cambio.</li>
+        <li><strong>Seguridad en el pipeline:</strong> escaneo de secretos y vulnerabilidades en cada cambio, para que el CI/CD no solo despliegue sino que también proteja.</li>
         <li><strong>Monitoreo y respaldos:</strong> métricas, alertas y una estrategia de respaldo 3-2-1 para que una falla de disco no sea un desastre.</li>
         <li><strong>Infraestructura como código:</strong> crear las máquinas virtuales con Terraform y configurarlas con Ansible, en lugar de hacerlo a mano.</li>
         <li><strong>Kubernetes:</strong> un clúster liviano con k3s para desplegar lo que hoy corre en Docker.</li>
@@ -100,6 +108,12 @@ import TerminalPrompt from '../components/TerminalPrompt.astro';
     margin: 0 0 var(--space-6);
     padding-bottom: var(--space-1);
     border-bottom: 1px solid var(--line);
+  }
+  .last-updated {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin: calc(-1 * var(--space-4)) 0 var(--space-4);
   }
   .intro {
     font-size: 17px;
