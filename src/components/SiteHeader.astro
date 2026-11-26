@@ -9,10 +9,7 @@ const currentPath = Astro.url.pathname;
   <div class="header-inner">
     <a href="/" class="dj-logo" aria-label="Inicio">{SITE.logo.replace('_', '')}<span>_</span></a>
     <div class="header-right">
-      <div class="dj-header__tools">
-        <SearchBox />
-        <ThemeToggle />
-      </div>
+      <SearchBox />
       <button type="button" class="mobile-menu-btn dj-icon-btn" aria-label="Abrir menú" aria-expanded="false" id="menu-btn">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
@@ -23,6 +20,7 @@ const currentPath = Astro.url.pathname;
         return <a href={item.href} aria-current={isActive ? 'page' : undefined}>{item.label}</a>;
       })}
     </nav>
+    <ThemeToggle />
   </div>
 </header>
 
