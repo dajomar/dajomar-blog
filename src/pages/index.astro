@@ -28,7 +28,7 @@ const articles = (await getCollection('articulos', ({ data }) => !data.draft)).s
       <div class="hero-terminal">
         <div class="dj-code">
           <div class="dj-code__bar"><span class="dj-code__lang">~/dajomar</span></div>
-          <pre>$ ls ~/recursos{'\n'}linux.pdf     redes.pdf    bash.pdf{'\n'}git.pdf       docker.pdf   kubernetes.pdf{'\n'}terraform.pdf jamf.pdf{'\n'}{'\n'}$ cat ruta.txt{'\n'}<span class="dj-c"># CCNA → Security+ → DevSecOps</span>{'\n'}{'\n'}$ <span class="dj-cursor"></span></pre>
+          <pre>$ ls ~/recursos{'\n'}linux.pdf     redes.pdf    bash.pdf{'\n'}git.pdf       docker.pdf   kubernetes.pdf{'\n'}terraform.pdf jamf.pdf{'\n'}{'\n'}$ cat ruta.txt{'\n'}<span class="dj-c"># Redes + Linux → DevOps → Seguridad</span>{'\n'}{'\n'}$ <span class="dj-cursor"></span></pre>
         </div>
       </div>
     </div>
@@ -72,19 +72,19 @@ const articles = (await getCollection('articulos', ({ data }) => !data.draft)).s
       </div>
       <div class="study-grid">
         <div class="study-card">
-          <span class="study-num">01</span>
-          <span class="study-name">CCNA</span>
-          <span class="study-desc">Redes desde cero: subnetting, VLANs, routing y switching.</span>
+          <span class="study-label">Base</span>
+          <span class="study-name">Redes y Linux</span>
+          <span class="study-desc">Fundamentos de redes, administración de Linux y Bash. Lo que sostiene todo lo demás.</span>
+        </div>
+        <div class="study-card study-card--focus">
+          <span class="study-label study-label--focus">Foco</span>
+          <span class="study-name">DevOps / DevSecOps</span>
+          <span class="study-desc">CI/CD, contenedores, infraestructura como código y seguridad dentro del pipeline.</span>
         </div>
         <div class="study-card">
-          <span class="study-num">02</span>
-          <span class="study-name">Security+</span>
-          <span class="study-desc">Fundamentos de seguridad, amenazas, controles y respuesta a incidentes.</span>
-        </div>
-        <div class="study-card">
-          <span class="study-num">03</span>
-          <span class="study-name">DevSecOps</span>
-          <span class="study-desc">Contenedores, IaC y seguridad dentro del pipeline.</span>
+          <span class="study-label"><svg class="study-shield" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Constante</span>
+          <span class="study-name">Seguridad</span>
+          <span class="study-desc">Hardening, buenas prácticas y fundamentos de Security+, aplicados en cada proyecto y en el homelab.</span>
         </div>
       </div>
       <Callout type="tip">Cada cheat sheet tiene su versión en texto aquí, con buscador. Usa <code>/</code> para buscar un comando sin abrir el PDF.</Callout>
@@ -253,11 +253,23 @@ const articles = (await getCollection('articulos', ({ data }) => !data.draft)).s
     border-radius: var(--radius-lg);
     background: var(--surface-raised);
   }
-  .study-num {
+  .study-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     font-family: var(--font-mono);
     font-size: 13px;
     font-weight: 700;
+    color: var(--ink-muted);
+  }
+  .study-label--focus {
     color: var(--accent-strong);
+  }
+  .study-card--focus {
+    border-color: var(--accent);
+  }
+  .study-shield {
+    flex-shrink: 0;
   }
   .study-name {
     font-size: 18px;

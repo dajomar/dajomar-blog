@@ -2,87 +2,88 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TerminalPrompt from '../components/TerminalPrompt.astro';
 ---
-<BaseLayout title="Homelab — dajomar" description="Mi homelab en Montreal: servidor, servicios self-hosted, cámaras y lo que aprendo armándolo.">
+<BaseLayout title="Homelab — dajomar" description="Los servidores, servicios y laboratorios que uso para practicar administración de sistemas, seguridad y DevSecOps.">
   <div class="content-width homelab-page">
-    <h1 class="page-title">Homelab</h1>
-    <p class="intro">Lo que corro en casa, cómo está conectado y qué he aprendido armándolo. Este es un laboratorio de estudio: lo uso para practicar lo que voy aprendiendo de redes, contenedores y seguridad, y de paso corro servicios que me sirven en el día a día.</p>
+    <h1 class="page-title">Mi homelab</h1>
+    <p class="intro">Mi homelab es donde practico lo que estudio. Todo lo que aparece en mis cheat sheets lo he usado (o roto) aquí primero: Linux, redes, Docker, virtualización y seguridad.</p>
 
     <section class="section">
-      <h2>Qué hay corriendo</h2>
-      <p>El servidor principal es una máquina con Linux donde corro todo con contenedores. Uso <a href="https://coolify.io">Coolify</a> como plataforma de despliegue: me da un panel para administrar los servicios sin tener que escribir Compose a mano cada vez.</p>
+      <h2>El hardware</h2>
+      <p><strong>roma</strong> es el servidor principal: una estación de trabajo HP Z420 reutilizada con un Xeon E5-1620 v2 y 32 GB de RAM, corriendo Ubuntu Server 24.04. No tiene GPU, y eso se nota cuando le pido trabajo de IA, pero para virtualización y contenedores rinde de sobra.</p>
+      <p>Al principio roma vivía conectado por Wi-Fi, como todo en la casa. Pero entre túneles, máquinas virtuales y DNS, cada microcorte se convertía en un servicio caído, así que terminé pasándolo a cable. Para un servidor, la estabilidad de la red no es opcional.</p>
+      <p>Además, reviví un <strong>MacBook Pro de 2012</strong> (Core i5, 16 GB de RAM) como estación de Kali Linux instalada directamente en el disco, en dual-boot con macOS. Es el lado atacante de mi laboratorio de Wi-Fi.</p>
+    </section>
 
+    <section class="section">
+      <h2>Qué corre en roma</h2>
       <div class="services-grid">
         <div class="service-card">
-          <span class="service-name">Coolify</span>
-          <span class="service-desc">Plataforma de despliegue. Administra los contenedores, los dominios internos y los certificados.</span>
+          <span class="service-name">Docker + Coolify</span>
+          <span class="service-desc">Para desplegar mis proyectos personales sin pelearme con la configuración de cada uno.</span>
         </div>
         <div class="service-card">
-          <span class="service-name">PostgreSQL</span>
-          <span class="service-desc">Base de datos para los proyectos locales. Respaldo automático diario.</span>
+          <span class="service-name">Nextcloud</span>
+          <span class="service-desc">Mi propia nube de archivos.</span>
         </div>
         <div class="service-card">
-          <span class="service-name">Redis</span>
-          <span class="service-desc">Caché y rate limiting para la API del backend de Bookify.</span>
+          <span class="service-name">KVM/QEMU (libvirt)</span>
+          <span class="service-desc">Máquinas virtuales: Windows 11, Kali Linux y Wazuh.</span>
+        </div>
+        <div class="service-card">
+          <span class="service-name">Apache Guacamole</span>
+          <span class="service-desc">Acceso a las consolas de las VMs desde el navegador, por RDP o VNC.</span>
         </div>
         <div class="service-card">
           <span class="service-name">Ollama</span>
-          <span class="service-desc">Modelos de lenguaje locales. Lo uso para un proyecto de estudio bíblico con IA.</span>
+          <span class="service-desc">Modelos de lenguaje locales. Llama 3.1 8B corre 100 % en CPU: funciona, pero lento, y es un buen recordatorio de por qué existen las GPUs.</span>
         </div>
         <div class="service-card">
-          <span class="service-name">SecureCam</span>
-          <span class="service-desc">Sistema de cámaras de seguridad propio. Streaming con FFmpeg + HLS, grabación y snapshots locales.</span>
-        </div>
-        <div class="service-card">
-          <span class="service-name">Cloudflare Tunnel</span>
-          <span class="service-desc">Expone servicios al exterior sin abrir puertos en el router. Políticas de acceso con correo y MFA.</span>
+          <span class="service-name">AdGuard Home</span>
+          <span class="service-desc">Filtro DNS para la red de la casa.</span>
         </div>
       </div>
     </section>
 
     <section class="section">
-      <h2>Acceso remoto</h2>
-      <p>Nada de puertos abiertos en el router. Todo pasa por Cloudflare Tunnel y Access:</p>
+      <h2>Cómo accedo sin abrir puertos</h2>
+      <p>No tengo ni un solo puerto abierto en el router. Los servicios que necesito usar desde fuera salen por <strong>Cloudflare Tunnel</strong>: es el servidor el que se conecta hacia Cloudflare, no internet hacia mi casa. Encima de cada servicio va <strong>Cloudflare Access</strong>, así que antes de llegar a cualquier panel hay que autenticarse con una cuenta permitida.</p>
+      <p>Evalué alternativas como Tailscale o manejar mis propios certificados, y me quedé con el túnel porque es simple, no expone mi IP y encaja con el modelo Zero Trust que quiero aprender.</p>
+    </section>
+
+    <section class="section">
+      <h2>Laboratorio de seguridad</h2>
+      <p>Mi ruta va hacia Blue Team y DevSecOps, así que el homelab tiene los dos lados:</p>
       <ul>
-        <li>El tunnel conecta el servidor con Cloudflare sin exponer la IP pública.</li>
-        <li>Cloudflare Access controla quién entra: política por correo con MFA obligatorio.</li>
-        <li>Los servicios internos que no necesitan salir al exterior se quedan solo en la red local.</li>
+        <li><strong>Defensa:</strong> Wazuh como SIEM en una VM de roma, para recolectar y analizar eventos. Las alertas llegan a un canal de Slack que uso para todos mis proyectos.</li>
+        <li><strong>Ataque (controlado):</strong> un laboratorio de Wi-Fi aislado, con un access point viejo como objetivo de pruebas y un adaptador USB con modo monitor conectado a Kali. Todo es mío y está separado de la red de la casa.</li>
+      </ul>
+      <p>La idea es atacar mi propio laboratorio y luego ver qué detecta Wazuh y qué no.</p>
+    </section>
+
+    <section class="section">
+      <h2>Cosas que aprendí a golpes</h2>
+      <ul>
+        <li><strong>Un servidor va por cable:</strong> el Wi-Fi sirve para empezar, pero la inestabilidad termina pasando factura en todo lo que depende de él.</li>
+        <li><strong>DNS y el router del proveedor:</strong> al poner AdGuard Home como DNS de toda la red, el propio servidor perdió la salida a internet. Además, el router seguía aplicando los DNS manuales aunque volviera a "automático". La solución fue sobrescribir esos campos con los DNS del proveedor antes de regresar al modo automático. Esto pasó porque todavía no tengo un router administrable: uso el del proveedor y su administración es muy limitada por el momento. Lección: el servidor que da DNS no puede depender de sí mismo para resolver.</li>
+        <li><strong>Limpiar también es administrar:</strong> borré proyectos de Coolify que ya no usaba. Menos servicios corriendo es menos superficie de ataque y menos cosas que mantener.</li>
+        <li><strong>Documentar todo:</strong> cada cambio queda en mis notas. La mitad de estos cheat sheets nació de ahí.</li>
       </ul>
     </section>
 
     <section class="section">
-      <h2>Proyectos que corren aquí</h2>
-      <p>El homelab no es solo infraestructura. Es donde desarrollo y pruebo los proyectos que están en proceso:</p>
+      <h2>Lo que viene</h2>
+      <p>Quiero seguir aprendiendo y expandiendo lo que sé de infraestructura, seguridad y DevOps. El homelab es el lugar para eso: probar, romper, entender y documentar.</p>
       <ul>
-        <li><strong>Bookify</strong> — Backend en Java 21 con Spring Boot, WebFlux, seguridad OAuth2 y cifrado AES-256-GCM. La API pública corre aquí durante desarrollo.</li>
-        <li><strong>Marketplace de limpiezas</strong> — Next.js, Supabase, Stripe Connect. El entorno de staging apunta al Postgres local.</li>
-        <li><strong>Estudio bíblico con IA</strong> — Python + Ollama + Supabase. Los modelos corren en local para no depender de APIs externas.</li>
-        <li><strong>SecureCam</strong> — Cámaras de seguridad con Next.js y FFmpeg. Grabación, snapshots y detección de sonido, todo procesado en el servidor.</li>
+        <li><strong>Un pipeline de CI/CD con seguridad integrada:</strong> este sitio se construye y se despliega solo, con escaneo de secretos y vulnerabilidades en cada cambio.</li>
+        <li><strong>Monitoreo y respaldos:</strong> métricas, alertas y una estrategia de respaldo 3-2-1 para que una falla de disco no sea un desastre.</li>
+        <li><strong>Infraestructura como código:</strong> crear las máquinas virtuales con Terraform y configurarlas con Ansible, en lugar de hacerlo a mano.</li>
+        <li><strong>Kubernetes:</strong> un clúster liviano con k3s para desplegar lo que hoy corre en Docker.</li>
+        <li><strong>Detección:</strong> reglas propias en Wazuh para ver qué detecta cuando ataco mi propio laboratorio.</li>
       </ul>
+      <p>Voy a ir documentando cada paso aquí.</p>
     </section>
 
-    <section class="section">
-      <h2>Stack de red</h2>
-      <p>La red es simple por ahora, pero la estoy expandiendo a medida que avanzo con el CCNA:</p>
-      <ul>
-        <li>Router del ISP en modo bridge.</li>
-        <li>Red separada para los dispositivos IoT y las cámaras.</li>
-        <li>DNS local para resolver los servicios internos por nombre.</li>
-        <li>Monitoreo de red básico para practicar lo que estudio.</li>
-      </ul>
-    </section>
-
-    <section class="section">
-      <h2>Lo que sigue</h2>
-      <p>El homelab crece con lo que estudio. Lo próximo en la lista:</p>
-      <ul>
-        <li>VLANs para segmentar mejor la red (tema de CCNA).</li>
-        <li>Monitoreo con Prometheus + Grafana para los contenedores.</li>
-        <li>Backups automatizados off-site con cifrado.</li>
-        <li>Hardening del servidor siguiendo lo que aprenda en Security+.</li>
-      </ul>
-    </section>
-
-    <TerminalPrompt path="~/homelab" command="docker ps --format 'table {{.Names}}\t{{.Status}}'" />
+    <TerminalPrompt path="~/homelab" command="ssh roma" />
   </div>
 </BaseLayout>
 

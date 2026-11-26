@@ -38,7 +38,7 @@ cloudflared tunnel create homelab
 Después, en el dashboard de Cloudflare Zero Trust:
 
 - Creé un túnel llamado `homelab`.
-- Agregué rutas: `coolify.midominio.com` → `http://localhost:8000`, y así para cada servicio.
+- Agregué rutas: `midominio.com` → `http://localhost:8000`, y así para cada servicio.
 - En Access, creé una política: solo mi correo, con MFA obligatorio vía código por email.
 
 ## Las políticas de Access
@@ -78,7 +78,6 @@ Esto funciona, pero hay cosas que quiero mejorar:
 
 - **Logs centralizados**: hoy reviso los logs de `cloudflared` a mano. Quiero mandarlos a un lugar donde pueda buscar patrones.
 - **Alertas de acceso**: que me llegue una notificación cuando alguien se autentique. Cloudflare Access tiene logs, pero no alertas nativas.
-- **Separar servicios**: hoy todo pasa por el mismo túnel. Para los servicios que no necesitan salir (como Postgres o Redis), debería asegurarme de que no son alcanzables ni por accidente.
 - **Backup de la configuración del túnel**: si pierdo el servidor, necesito poder levantar todo desde cero. La config del túnel está en Cloudflare, pero las credenciales locales hay que respaldarlas.
 
 <Callout type="security">
@@ -87,6 +86,6 @@ Las credenciales del túnel (`cert.pem` y el archivo JSON del túnel) dan acceso
 
 ## El resultado
 
-Accedo a Coolify y a los servicios del homelab desde cualquier lugar con mi correo y un código. No hay puertos abiertos, no hay IP expuesta, no hay certificados que administrar. Para un homelab personal, es más seguridad de la que tiene la mayoría de los VPS expuestos a internet.
+Accedo a mis servicios desde cualquier lugar con mi correo y un código. No hay puertos abiertos, no hay IP expuesta, no hay certificados que administrar. Para un homelab personal, es más seguridad de la que tiene la mayoría de los VPS expuestos a internet.
 
 Lo próximo es integrar esto con el monitoreo que estoy planeando: si un servicio se cae, quiero saberlo antes de intentar acceder.
