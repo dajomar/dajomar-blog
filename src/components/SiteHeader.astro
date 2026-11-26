@@ -8,19 +8,21 @@ const currentPath = Astro.url.pathname;
 <header class="dj-header">
   <div class="header-inner">
     <a href="/" class="dj-logo" aria-label="Inicio">{SITE.logo.replace('_', '')}<span>_</span></a>
-    <button type="button" class="mobile-menu-btn dj-icon-btn" aria-label="Abrir menú" aria-expanded="false" id="menu-btn">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
+    <div class="header-right">
+      <div class="dj-header__tools">
+        <SearchBox />
+        <ThemeToggle />
+      </div>
+      <button type="button" class="mobile-menu-btn dj-icon-btn" aria-label="Abrir menú" aria-expanded="false" id="menu-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
     <nav aria-label="Principal" class="dj-nav" id="main-nav">
       {NAV_ITEMS.map(item => {
         const isActive = currentPath.startsWith(item.href);
         return <a href={item.href} aria-current={isActive ? 'page' : undefined}>{item.label}</a>;
       })}
     </nav>
-    <div class="dj-header__tools">
-      <SearchBox />
-      <ThemeToggle />
-    </div>
   </div>
 </header>
 
@@ -35,12 +37,25 @@ const currentPath = Astro.url.pathname;
     justify-content: space-between;
     gap: var(--space-4);
   }
+  .header-right {
+    display: contents;
+  }
   .mobile-menu-btn {
     display: none;
   }
   @media (max-width: 768px) {
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
     .mobile-menu-btn {
       display: grid;
+    }
+    .dj-header__tools {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
     }
     .dj-nav {
       display: none;
