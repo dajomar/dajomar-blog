@@ -8,7 +8,7 @@ export const SITE = {
   siteUrl: import.meta.env.PUBLIC_SITE_URL || 'https://dajomar.com',
   pdfBaseUrl: import.meta.env.PUBLIC_PDF_BASE_URL || '/pdfs',
   github: 'https://github.com/dajomar',
-  linkedin: 'https://linkedin.com/in/davidmaza',
+  linkedin: 'https://www.linkedin.com/in/david-maza-26b95462/',
   personalSite: 'https://davidmaza.co',
 } as const;
 
