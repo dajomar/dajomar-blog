@@ -7,7 +7,7 @@ export const SITE = {
   city: 'Montreal',
   siteUrl: import.meta.env.PUBLIC_SITE_URL || 'https://dajomar.com',
   pdfBaseUrl: import.meta.env.PUBLIC_PDF_BASE_URL || '/pdfs',
-  github: 'https://github.com/dajomaz',
+  github: 'https://github.com/dajomar',
   linkedin: 'https://linkedin.com/in/davidmaza',
   personalSite: 'https://davidmaza.co',
 } as const;
