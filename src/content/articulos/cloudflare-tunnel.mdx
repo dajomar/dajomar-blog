@@ -3,7 +3,90 @@ title: "Cómo dejé mi homelab detrás de Cloudflare Tunnel y Access"
 description: "Sin puertos abiertos en el router, con políticas de acceso por correo y MFA. Lo que revisé y lo que todavía falta."
 date: 2026-11-15
 tags: ["homelab", "zero trust"]
-draft: true
+draft: false
 ---
 
-[ESCRIBIR]
+import Callout from '../../components/Callout.astro';
+
+El problema era simple: quería acceder a Coolify y a un par de servicios desde afuera de casa sin abrir puertos en el router. Abrir el 443 y poner un reverse proxy es lo clásico, pero la IP queda expuesta y cualquier escáner te encuentra en minutos.
+
+La alternativa: Cloudflare Tunnel. El servidor inicia una conexión de salida hacia Cloudflare, y Cloudflare enruta el tráfico hacia adentro. Desde afuera, nadie ve tu IP real. Desde adentro, no hay puertos abiertos.
+
+## Cómo funciona
+
+El flujo es:
+
+1. `cloudflared` corre en el servidor como un contenedor (o un servicio de systemd).
+2. Establece un túnel persistente hacia la red de Cloudflare.
+3. En el dashboard de Cloudflare Zero Trust defines qué subdominios apuntan a qué servicio interno (`localhost:3000`, `localhost:8080`, etc.).
+4. Cloudflare Access pone una capa de autenticación delante: antes de llegar al servicio, el usuario tiene que autenticarse.
+
+No hay port forwarding, no hay IP pública expuesta, no hay certificados que renovar a mano (Cloudflare los maneja).
+
+## Lo que instalé
+
+En el servidor, `cloudflared` corre como contenedor con Coolify. La configuración es mínima:
+
+```bash
+# Crear el túnel (una sola vez)
+cloudflared tunnel create homelab
+
+# Archivo de configuración: ~/.cloudflared/config.yml
+# Se define en el dashboard de Zero Trust
+```
+
+Después, en el dashboard de Cloudflare Zero Trust:
+
+- Creé un túnel llamado `homelab`.
+- Agregué rutas: `coolify.midominio.com` → `http://localhost:8000`, y así para cada servicio.
+- En Access, creé una política: solo mi correo, con MFA obligatorio vía código por email.
+
+## Las políticas de Access
+
+Cloudflare Access funciona como un proxy de autenticación. Antes de que el tráfico llegue a tu servicio, Access verifica la identidad. Si no tienes sesión válida, te redirige a un formulario de login.
+
+Mi política es simple:
+
+- **Quién**: solo mi correo personal.
+- **Método**: One-Time PIN por email (no quiero depender de un proveedor de identidad externo por ahora).
+- **Duración de la sesión**: 24 horas. Después de eso, hay que autenticarse de nuevo.
+
+<Callout type="tip">
+El One-Time PIN por email funciona bien para uso personal. Si necesitas algo más robusto, puedes conectar GitHub, Google o un IdP con SAML/OIDC.
+</Callout>
+
+## Lo que revisé
+
+Después de configurar todo, revisé:
+
+- **Que no hubiera puertos abiertos**: desde otra red, escaneé mi IP pública con `nmap`. Nada expuesto.
+- **Que los servicios internos no respondieran sin Access**: intenté acceder directamente al subdominio sin sesión. Redirige al login.
+- **Que el túnel se reconecte solo**: reinicié el servidor, el contenedor de `cloudflared` levantó y reconectó sin intervención.
+- **DNS**: los registros CNAME los crea Cloudflare automáticamente al configurar el túnel.
+
+```bash
+# Verificar que no hay puertos abiertos (desde otra red)
+nmap -Pn MI_IP_PUBLICA
+
+# Verificar el estado del túnel
+cloudflared tunnel info homelab
+```
+
+## Lo que todavía falta
+
+Esto funciona, pero hay cosas que quiero mejorar:
+
+- **Logs centralizados**: hoy reviso los logs de `cloudflared` a mano. Quiero mandarlos a un lugar donde pueda buscar patrones.
+- **Alertas de acceso**: que me llegue una notificación cuando alguien se autentique. Cloudflare Access tiene logs, pero no alertas nativas.
+- **Separar servicios**: hoy todo pasa por el mismo túnel. Para los servicios que no necesitan salir (como Postgres o Redis), debería asegurarme de que no son alcanzables ni por accidente.
+- **Backup de la configuración del túnel**: si pierdo el servidor, necesito poder levantar todo desde cero. La config del túnel está en Cloudflare, pero las credenciales locales hay que respaldarlas.
+
+<Callout type="security">
+Las credenciales del túnel (`cert.pem` y el archivo JSON del túnel) dan acceso completo a tu infraestructura desde Cloudflare. Respaldarlas fuera del servidor y protegerlas con el mismo cuidado que una llave SSH.
+</Callout>
+
+## El resultado
+
+Accedo a Coolify y a los servicios del homelab desde cualquier lugar con mi correo y un código. No hay puertos abiertos, no hay IP expuesta, no hay certificados que administrar. Para un homelab personal, es más seguridad de la que tiene la mayoría de los VPS expuestos a internet.
+
+Lo próximo es integrar esto con el monitoreo que estoy planeando: si un servicio se cae, quiero saberlo antes de intentar acceder.

@@ -3,7 +3,157 @@ title: "Bash no es lo mismo que sh"
 description: "Por qué un script con [[ ]] funciona en Fedora y falla en Ubuntu o en un contenedor Alpine, y qué shebang usar."
 date: 2026-11-10
 tags: ["bash", "linux"]
-draft: true
+draft: false
 ---
 
-[ESCRIBIR]
+import Callout from '../../components/Callout.astro';
+
+Escribes un script, lo pruebas en tu máquina, funciona perfecto. Lo subes a un contenedor Alpine o lo corres en un servidor Ubuntu con `sh script.sh` y se rompe. El error suele verse así:
+
+```bash
+# En Alpine o con sh:
+sh: line 5: [[: not found
+```
+
+El problema no es tu script. El problema es que `sh` no es `bash`.
+
+## sh es una especificación, bash es una implementación
+
+`sh` se refiere al shell POSIX: un estándar mínimo que define qué sintaxis y qué comandos debe soportar un shell. `bash` (Bourne Again Shell) es una implementación que cumple con POSIX pero agrega muchas cosas encima.
+
+Cuando escribes `[[ $var == "algo" ]]`, estás usando sintaxis de bash. POSIX solo define `[ $var = "algo" ]` (con un solo `=` y corchetes simples).
+
+La confusión viene de que en muchas distros, `/bin/sh` es un enlace simbólico a `/bin/bash`. Escribes para bash sin saberlo y todo funciona... hasta que no.
+
+## Dónde falla
+
+| Distro / entorno | `/bin/sh` apunta a | Resultado |
+| --- | --- | --- |
+| Fedora, RHEL, macOS | `/bin/bash` | Funciona (sh = bash) |
+| Ubuntu, Debian | `/bin/dash` | Falla con `[[`, arrays, etc. |
+| Alpine (contenedores) | `/bin/busybox ash` | Falla con todo lo que no sea POSIX |
+
+```bash
+# Verificar qué shell es /bin/sh
+ls -la /bin/sh
+# /bin/sh -> dash  (Ubuntu)
+# /bin/sh -> bash  (Fedora)
+
+# Verificar qué shell estás usando
+echo $0
+echo $SHELL
+```
+
+## Las diferencias que más muerden
+
+### Condicionales
+
+```bash
+# Bash (funciona con bash, falla con sh en Ubuntu/Alpine)
+if [[ "$nombre" == "david" && -f "$archivo" ]]; then
+  echo "encontrado"
+fi
+
+# POSIX (funciona en todos)
+if [ "$nombre" = "david" ] && [ -f "$archivo" ]; then
+  echo "encontrado"
+fi
+```
+
+### Arrays
+
+```bash
+# Bash
+frutas=("manzana" "pera" "uva")
+echo "${frutas[1]}"  # pera
+
+# POSIX: no hay arrays. Usa argumentos posicionales o corta cadenas.
+```
+
+### Sustitución de procesos
+
+```bash
+# Bash
+diff <(ls dir1) <(ls dir2)
+
+# POSIX: no existe. Usa archivos temporales.
+```
+
+### Cadenas multilínea
+
+```bash
+# Bash
+read -r -d '' msg <<'EOF'
+Esto es un mensaje
+de varias líneas.
+EOF
+
+# POSIX: heredocs funcionan, pero read -d no existe.
+```
+
+<Callout type="tip">
+Si no sabes si tu script usa extensiones de bash, pruébalo con `dash`: `dash script.sh`. Si funciona ahí, funciona en cualquier shell POSIX.
+</Callout>
+
+## Qué shebang usar
+
+La línea del shebang (`#!`) al inicio del script le dice al sistema qué intérprete usar. Esta es la decisión real:
+
+```bash
+#!/bin/bash
+# Usa bash explícitamente. El script corre con bash
+# aunque lo ejecutes con "sh script.sh" NO: el shebang
+# solo aplica si ejecutas con ./script.sh
+
+#!/bin/sh
+# Usa el shell POSIX del sistema. Puede ser dash, ash, bash...
+# Tu script debe ser POSIX puro.
+
+#!/usr/bin/env bash
+# Busca bash en el PATH. Más portable entre sistemas
+# donde bash no está en /bin/bash (como algunos BSD).
+```
+
+La regla es simple:
+
+- Si usas `[[`, arrays, `read -d`, `$RANDOM`, o cualquier extensión de bash: pon `#!/usr/bin/env bash`.
+- Si tu script es POSIX puro y quieres que corra en cualquier lado (contenedores Alpine, scripts de init): pon `#!/bin/sh`.
+- Nunca dejes el shebang vacío. Sin shebang, el comportamiento depende de cómo ejecutes el script.
+
+## En contenedores importa más
+
+En Docker, la imagen base define qué shell tienes:
+
+```dockerfile
+# Alpine: NO tiene bash por defecto
+FROM alpine:3.19
+RUN apk add bash  # Si lo necesitas, instálalo explícito
+
+# Ubuntu/Debian: tiene bash, pero /bin/sh es dash
+FROM ubuntu:24.04
+# bash está en /bin/bash, sh es dash
+```
+
+Si tu `Dockerfile` usa `RUN` con sintaxis de bash, recuerda que Docker ejecuta `RUN` con `/bin/sh` por defecto. Si necesitas bash:
+
+```dockerfile
+# Esto falla en Alpine:
+RUN [[ -f /app/config.json ]] && echo "ok"
+
+# Esto funciona:
+RUN ["bash", "-c", "[[ -f /app/config.json ]] && echo ok"]
+
+# O mejor, usa POSIX:
+RUN [ -f /app/config.json ] && echo "ok"
+```
+
+<Callout type="warning">
+En scripts de CI/CD (GitHub Actions, GitLab CI), el shell por defecto varía según el runner. Siempre especifica el shell: `shell: bash` en GitHub Actions, o pon el shebang correcto.
+</Callout>
+
+## Resumen
+
+- `sh` es el estándar POSIX. `bash` lo extiende con muchas funciones.
+- Si tu script usa extensiones de bash, el shebang debe decir `bash`, no `sh`.
+- En contenedores Alpine, `bash` no existe. Instálalo o escribe POSIX.
+- Cuando algo falla con un error raro en otra distro, lo primero que hay que revisar es qué shell está corriendo.

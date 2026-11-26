@@ -3,7 +3,156 @@ title: "Un Mac no recibe políticas de Jamf: el orden en que lo diagnostico"
 description: "De checkJSSConnection al scope de la política, paso a paso y con los logs que hay que mirar."
 date: 2026-11-05
 tags: ["jamf", "soporte"]
-draft: true
+draft: false
 ---
 
-[ESCRIBIR]
+import Callout from '../../components/Callout.astro';
+
+Te llega el ticket: "el Mac de Fulano no instaló la app" o "la configuración no se aplicó". Antes de hacer nada, el orden importa. Si no sigues un orden, puedes perder media hora revisando scopes cuando el problema era que el equipo no se comunicaba con Jamf.
+
+Este es el orden que sigo. De lo más básico a lo más específico.
+
+## 1. El Mac se comunica con Jamf
+
+Lo primero es verificar que el equipo puede hablar con el servidor de Jamf Pro. Sin esto, nada más importa.
+
+```bash
+# En la terminal del Mac:
+sudo jamf checkJSSConnection
+```
+
+Si la respuesta es `The JSS is available`, la comunicación funciona. Si falla, revisa:
+
+- Red: que el Mac tenga internet y pueda alcanzar el servidor de Jamf (puerto 443).
+- Certificado: que el certificado de confianza de Jamf no haya expirado.
+- Proxy: si hay un proxy corporativo, que no esté bloqueando la conexión.
+
+```bash
+# Verificar conectividad manual
+curl -I https://tu-instancia.jamfcloud.com/healthCheck.html
+# Debe devolver 200
+```
+
+## 2. El Mac tiene un enrollment válido
+
+Un Mac puede estar en el inventario de Jamf pero con un enrollment roto. Esto pasa después de reinstalaciones del sistema o si alguien borró perfiles manualmente.
+
+```bash
+# Verificar el enrollment MDM
+sudo profiles status -type enrollment
+# Debe decir: Enrolled via DEP: Yes (o MDM enrollment: Yes)
+
+# Ver los perfiles instalados
+sudo profiles list -verbose
+```
+
+Si el enrollment está roto, el equipo aparece en Jamf pero no recibe comandos. La solución suele ser re-enrollar:
+
+```bash
+# Forzar un re-enrollment (si el framework está intacto)
+sudo jamf enroll -prompt
+```
+
+<Callout type="tip">
+Si el Mac fue inscrito por DEP (Automated Device Enrollment), un wipe y la reinstalación debería re-enrollarlo automáticamente al pasar por el Asistente de Configuración.
+</Callout>
+
+## 3. El inventario está actualizado
+
+Jamf toma decisiones basándose en el inventario: grupo de computadoras, usuario asignado, versión de macOS, apps instaladas. Si el inventario está desactualizado, el equipo puede caer fuera del scope de una política.
+
+```bash
+# Forzar un envío de inventario
+sudo jamf recon
+```
+
+Después de esto, ve a Jamf Pro → el registro del equipo → pestaña **History** → **Inventory Updates** y verifica que la fecha sea reciente.
+
+Revisa también:
+
+- **Que el usuario correcto esté asignado** al equipo. Muchas políticas filtran por usuario o por departamento.
+- **Que el nombre del equipo** coincida con lo esperado si hay smart groups basados en nombre.
+
+## 4. El equipo está en el scope correcto
+
+Este es el paso donde más tiempo se pierde. La política existe, está habilitada, pero el equipo no está en su scope.
+
+En Jamf Pro, abre la política y revisa la pestaña **Scope**:
+
+- **Targets**: a qué computadoras, grupos o departamentos aplica.
+- **Exclusions**: si el equipo o su grupo está excluido.
+- **Limitations**: si hay limitaciones por red, edificio o versión de macOS.
+
+Luego ve al registro del equipo y verifica en qué **smart groups** cae. Si la política apunta a un smart group, el equipo debe ser miembro.
+
+```bash
+# Ver la membresía de smart groups (desde la API)
+curl -s -u admin:password \
+  "https://tu-instancia.jamfcloud.com/JSSResource/computers/serialnumber/SERIAL/subset/GroupsAccounts" \
+  -H "Accept: application/json" | python3 -m json.tool
+```
+
+<Callout type="warning">
+Los smart groups se recalculan periódicamente, no en tiempo real. Si acabas de cambiar un criterio, espera unos minutos o forza el recálculo desde el smart group.
+</Callout>
+
+## 5. El trigger y la frecuencia son correctos
+
+Una política puede estar bien en scope pero nunca ejecutarse porque el trigger no se cumple o la frecuencia ya se agotó.
+
+Revisa en la política:
+
+- **Trigger**: qué evento la dispara. Los más comunes:
+  - `Recurring Check-in`: se ejecuta cada vez que el Mac hace check-in (cada ~15 min por defecto).
+  - `Enrollment Complete`: solo al inscribirse.
+  - `Startup`: al encender.
+  - `Custom`: un trigger manual con `sudo jamf policy -event nombre`.
+- **Frequency**: cuántas veces se ejecuta.
+  - `Once per computer`: ya se ejecutó y no se va a repetir.
+  - `Ongoing`: cada vez que se cumple el trigger.
+
+Si la frecuencia es "Once per computer" y ya se ejecutó (aunque haya fallado), Jamf no la volverá a correr. Revisa en el registro del equipo → **History** → **Policy Logs**.
+
+```bash
+# Forzar la ejecución de todas las políticas pendientes
+sudo jamf policy
+
+# Forzar una política específica por trigger personalizado
+sudo jamf policy -event instalar-chrome
+```
+
+## 6. Revisar los logs
+
+Si la política se ejecutó pero falló, los logs te dicen por qué.
+
+```bash
+# Log principal de Jamf en el Mac
+cat /var/log/jamf.log | tail -50
+
+# Buscar errores de una política específica
+grep -i "policy" /var/log/jamf.log | grep -i "error" | tail -20
+
+# Log del sistema para problemas de MDM
+log show --predicate 'subsystem == "com.apple.ManagedClient"' --last 30m
+```
+
+En Jamf Pro, el log de la política del equipo (History → Policy Logs) muestra:
+
+- Si la política se ejecutó.
+- Si los paquetes se descargaron correctamente.
+- Si los scripts salieron con código 0 (éxito) o con error.
+
+<Callout type="tip">
+Si un script falla, el código de salida aparece en el log. `exit 0` = éxito, cualquier otro valor = fallo. Revisa que tus scripts tengan `exit 0` al final si no manejan errores explícitamente.
+</Callout>
+
+## Resumen del orden
+
+1. `jamf checkJSSConnection` — el Mac habla con Jamf.
+2. `profiles status -type enrollment` — el enrollment es válido.
+3. `jamf recon` — el inventario está al día.
+4. Scope de la política — el equipo está incluido y no excluido.
+5. Trigger y frecuencia — la política tiene razón para ejecutarse.
+6. Logs — qué pasó cuando se ejecutó (o por qué no se ejecutó).
+
+Si seguiste estos pasos en orden y el problema persiste, es momento de abrir un ticket con Jamf Support con los datos que ya recopilaste. Tener los logs listos ahorra mucho ida y vuelta.

@@ -1,14 +1,96 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import TerminalPrompt from '../components/TerminalPrompt.astro';
 ---
-<BaseLayout title="Homelab — dajomar" description="Notas sobre mi homelab: hardware, servicios y configuración.">
-  <div class="content-width" style="padding-top: 40px; padding-bottom: 72px;">
+<BaseLayout title="Homelab — dajomar" description="Mi homelab en Montreal: servidor, servicios self-hosted, cámaras y lo que aprendo armándolo.">
+  <div class="content-width homelab-page">
     <h1 class="page-title">Homelab</h1>
-    <p>[DESCRIBIR EL HOMELAB]</p>
+    <p class="intro">Lo que corro en casa, cómo está conectado y qué he aprendido armándolo. Este es un laboratorio de estudio: lo uso para practicar lo que voy aprendiendo de redes, contenedores y seguridad, y de paso corro servicios que me sirven en el día a día.</p>
+
+    <section class="section">
+      <h2>Qué hay corriendo</h2>
+      <p>El servidor principal es una máquina con Linux donde corro todo con contenedores. Uso <a href="https://coolify.io">Coolify</a> como plataforma de despliegue: me da un panel para administrar los servicios sin tener que escribir Compose a mano cada vez.</p>
+
+      <div class="services-grid">
+        <div class="service-card">
+          <span class="service-name">Coolify</span>
+          <span class="service-desc">Plataforma de despliegue. Administra los contenedores, los dominios internos y los certificados.</span>
+        </div>
+        <div class="service-card">
+          <span class="service-name">PostgreSQL</span>
+          <span class="service-desc">Base de datos para los proyectos locales. Respaldo automático diario.</span>
+        </div>
+        <div class="service-card">
+          <span class="service-name">Redis</span>
+          <span class="service-desc">Caché y rate limiting para la API del backend de Bookify.</span>
+        </div>
+        <div class="service-card">
+          <span class="service-name">Ollama</span>
+          <span class="service-desc">Modelos de lenguaje locales. Lo uso para un proyecto de estudio bíblico con IA.</span>
+        </div>
+        <div class="service-card">
+          <span class="service-name">SecureCam</span>
+          <span class="service-desc">Sistema de cámaras de seguridad propio. Streaming con FFmpeg + HLS, grabación y snapshots locales.</span>
+        </div>
+        <div class="service-card">
+          <span class="service-name">Cloudflare Tunnel</span>
+          <span class="service-desc">Expone servicios al exterior sin abrir puertos en el router. Políticas de acceso con correo y MFA.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Acceso remoto</h2>
+      <p>Nada de puertos abiertos en el router. Todo pasa por Cloudflare Tunnel y Access:</p>
+      <ul>
+        <li>El tunnel conecta el servidor con Cloudflare sin exponer la IP pública.</li>
+        <li>Cloudflare Access controla quién entra: política por correo con MFA obligatorio.</li>
+        <li>Los servicios internos que no necesitan salir al exterior se quedan solo en la red local.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Proyectos que corren aquí</h2>
+      <p>El homelab no es solo infraestructura. Es donde desarrollo y pruebo los proyectos que están en proceso:</p>
+      <ul>
+        <li><strong>Bookify</strong> — Backend en Java 21 con Spring Boot, WebFlux, seguridad OAuth2 y cifrado AES-256-GCM. La API pública corre aquí durante desarrollo.</li>
+        <li><strong>Marketplace de limpiezas</strong> — Next.js, Supabase, Stripe Connect. El entorno de staging apunta al Postgres local.</li>
+        <li><strong>Estudio bíblico con IA</strong> — Python + Ollama + Supabase. Los modelos corren en local para no depender de APIs externas.</li>
+        <li><strong>SecureCam</strong> — Cámaras de seguridad con Next.js y FFmpeg. Grabación, snapshots y detección de sonido, todo procesado en el servidor.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Stack de red</h2>
+      <p>La red es simple por ahora, pero la estoy expandiendo a medida que avanzo con el CCNA:</p>
+      <ul>
+        <li>Router del ISP en modo bridge.</li>
+        <li>Red separada para los dispositivos IoT y las cámaras.</li>
+        <li>DNS local para resolver los servicios internos por nombre.</li>
+        <li>Monitoreo de red básico para practicar lo que estudio.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Lo que sigue</h2>
+      <p>El homelab crece con lo que estudio. Lo próximo en la lista:</p>
+      <ul>
+        <li>VLANs para segmentar mejor la red (tema de CCNA).</li>
+        <li>Monitoreo con Prometheus + Grafana para los contenedores.</li>
+        <li>Backups automatizados off-site con cifrado.</li>
+        <li>Hardening del servidor siguiendo lo que aprenda en Security+.</li>
+      </ul>
+    </section>
+
+    <TerminalPrompt path="~/homelab" command="docker ps --format 'table {{.Names}}\t{{.Status}}'" />
   </div>
 </BaseLayout>
 
 <style>
+  .homelab-page {
+    padding-top: 40px;
+    padding-bottom: 72px;
+  }
   .page-title {
     font-size: 34px;
     line-height: 40px;
@@ -17,5 +99,60 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     margin: 0 0 var(--space-6);
     padding-bottom: var(--space-1);
     border-bottom: 1px solid var(--line);
+  }
+  .intro {
+    font-size: 17px;
+    line-height: 28px;
+    color: var(--ink-muted);
+    margin: 0 0 var(--space-8);
+    max-width: 620px;
+  }
+  .section {
+    margin-bottom: var(--space-12);
+  }
+  .section h2 {
+    font-size: 26px;
+    line-height: 32px;
+    font-weight: 300;
+    color: var(--heading);
+    margin: 0 0 var(--space-3);
+    padding-bottom: var(--space-1);
+    border-bottom: 1px solid var(--line);
+  }
+  .section p {
+    margin: var(--space-2) 0;
+  }
+  .section ul {
+    padding-left: var(--space-6);
+    margin: var(--space-2) 0;
+  }
+  .section li {
+    margin: var(--space-1) 0;
+    line-height: 26px;
+  }
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+  }
+  .service-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-raised);
+  }
+  .service-name {
+    font-size: 18px;
+    line-height: 26px;
+    font-weight: 700;
+  }
+  .service-desc {
+    font-size: 14px;
+    line-height: 22px;
+    color: var(--ink-muted);
   }
 </style>
