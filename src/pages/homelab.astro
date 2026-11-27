@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import TerminalPrompt from '../components/TerminalPrompt.astro';
+import Status from '../components/Status.astro';
 ---
 <BaseLayout title="Homelab — dajomar" description="Los servidores, servicios y laboratorios que uso para practicar administración de sistemas, seguridad y DevSecOps.">
   <div class="content-width homelab-page">
@@ -82,7 +83,7 @@ import TerminalPrompt from '../components/TerminalPrompt.astro';
       <h2>Lo que viene</h2>
       <p>Quiero seguir aprendiendo y expandiendo lo que sé de infraestructura, seguridad y DevOps. El homelab es el lugar para eso: probar, romper, entender y documentar.</p>
       <ul>
-        <li><strong>Seguridad en el pipeline:</strong> escaneo de secretos y vulnerabilidades en cada cambio, para que el CI/CD no solo despliegue sino que también proteja.</li>
+        <li><strong>Un pipeline de CI/CD con seguridad integrada</strong> · <Status variant="en-curso">En curso</Status>: este sitio se construye y se despliega solo, con escaneo de secretos y vulnerabilidades en cada cambio. <a href="/articulos/pipeline-seguro/">Sigue el avance →</a></li>
         <li><strong>Monitoreo y respaldos:</strong> métricas, alertas y una estrategia de respaldo 3-2-1 para que una falla de disco no sea un desastre.</li>
         <li><strong>Infraestructura como código:</strong> crear las máquinas virtuales con Terraform y configurarlas con Ansible, en lugar de hacerlo a mano.</li>
         <li><strong>Kubernetes:</strong> un clúster liviano con k3s para desplegar lo que hoy corre en Docker.</li>

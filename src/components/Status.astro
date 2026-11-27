@@ -1,0 +1,30 @@
+---
+interface Props {
+  variant: 'en-curso' | 'terminado';
+}
+
+const { variant } = Astro.props;
+---
+<span class:list={['status', `status--${variant}`]}><slot /></span>
+
+<style>
+  .status {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 8px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
+  }
+  .status--en-curso {
+    border: 1px solid var(--accent);
+    color: var(--accent-strong);
+  }
+  .status--terminado {
+    border: 1px solid var(--line);
+    color: var(--ink-muted);
+  }
+</style>
