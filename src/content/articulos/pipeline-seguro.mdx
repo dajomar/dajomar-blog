@@ -1,0 +1,148 @@
+---
+title: "Cómo estoy protegiendo el pipeline de este blog"
+description: "Un proyecto en curso: escaneo de secretos y vulnerabilidades en cada cambio, organizado como en un equipo real con Jira y GitHub."
+date: 2026-11-27
+tags: ["devsecops", "github", "jira", "seguridad"]
+draft: false
+---
+
+> **Artículo en curso.** Lo voy actualizando a medida que avanzo en el proyecto. Última actualización: 27 de noviembre de 2026.
+
+Este sitio se despliega solo: cada cambio que llega a la rama `main` en GitHub, Cloudflare Pages lo construye y lo publica en uno o dos minutos. Es cómodo, pero tiene un riesgo: **Cloudflare publica lo que llegue, sin preguntar si es seguro.**
+
+Si por error subo una API key, una contraseña o un paquete con una vulnerabilidad conocida, se publica igual. Este proyecto busca que eso no pueda pasar.
+
+## La idea central
+
+No puedo poner la protección en el despliegue, porque Cloudflare no espera a nadie. Así que la pongo antes: **nada entra a `main` sin pasar por un pull request con los escaneos en verde.**
+
+## El plan
+
+- [x] Proteger la rama `main`
+- [x] Activar secret scanning y Dependabot en GitHub
+- [ ] Escaneo de secretos con gitleaks en cada pull request
+- [ ] Probar que el escaneo realmente bloquea
+- [ ] Escaneo de dependencias con `npm audit`
+- [ ] Hacer los chequeos obligatorios antes del merge
+- [ ] Endurecer el propio workflow
+
+## Cómo organizo el trabajo: Jira y GitHub
+
+Aunque trabajo solo, quise manejar este proyecto como en un equipo de desarrollo real.
+
+### Épica y tareas
+
+En **Jira** creé un proyecto con dos niveles:
+
+- **Épica:** una tarea grande que agrupa otras. La mía es "Seguridad en el pipeline".
+- **Tareas:** un paso concreto cada una, con un "listo cuando" que dice cómo comprobar que está terminado.
+
+Cada tarea tiene un código único, como `HOM-4`. Ese código es la pieza que une todo.
+
+### Conectar Jira con GitHub
+
+Jira y GitHub se conectan con la app **GitHub for Atlassian**. Una vez instalada, cualquier rama, commit o pull request que mencione el código de una tarea aparece dentro de esa tarea en Jira, en un panel llamado **Development**. No hay que enlazar nada a mano: el código hace todo.
+
+Un detalle de seguridad: al conectarla, la app pide acceso a **todos** los repositorios por defecto. Lo correcto es darle acceso solo a los repos que se van a enlazar. Si la integración se viera comprometida, solo alcanzaría lo necesario. A eso se le llama **mínimo privilegio**.
+
+### La convención de nombres de ramas
+
+Cada rama lleva un prefijo que dice qué tipo de cambio contiene, seguido del código de la tarea y una descripción corta:
+
+| Prefijo | Para qué | Ejemplo |
+| --- | --- | --- |
+| `feat/` | Algo nuevo | `feat/HOM-4-escaneo-secretos` |
+| `fix/` | Corregir un error | `fix/HOM-12-enlace-roto` |
+| `docs/` | Contenido o documentación | `docs/HOM-9-articulo-pipeline` |
+| `chore/` | Mantenimiento o configuración | `chore/HOM-8-endurecer-workflow` |
+| `refactor/` | Reorganizar código sin cambiar lo que hace | `refactor/HOM-15-componente-card` |
+
+La barra no tiene ningún significado especial para Git: es parte del nombre. Sirve para entender de un vistazo qué hay en cada rama, y muchas herramientas las agrupan como si fueran carpetas.
+
+Los mensajes de commit siguen la misma idea, con el código al inicio: `HOM-9 docs: borrador del artículo del pipeline`.
+
+### El flujo de cada tarea
+
+1. En Jira, la tarea pasa a **En curso**.
+2. Creo la rama con el código de la tarea.
+3. Hago los cambios y los commits.
+4. Subo la rama y abro un pull request con el código en el título. La tarea pasa a **En revisión**.
+5. Reviso el pull request, espero que los chequeos pasen y hago merge.
+6. La tarea pasa a **Hecho**.
+
+### Lo que aprendí creando una rama desde Jira
+
+Jira tiene un botón **Create branch** dentro de cada tarea. Lo probé, y la página se quedó cargando sin mostrar nada. Pensé que había fallado, pero al revisar las ramas de GitHub desde la terminal apareció creada, con un nombre generado a partir del título:
+
+```bash
+git branch -l      # solo muestra las ramas de mi computadora
+git branch -r      # muestra las ramas que existen en GitHub
+```
+
+Lección: `git branch -l` no muestra lo que existe en GitHub. Para traer una rama creada allá basta con `git fetch` y `git switch` con su nombre exacto. Y el botón es solo un atajo: crear la rama desde la terminal con el código en el nombre funciona igual.
+
+## Paso 1: proteger la rama `main`
+
+En GitHub, un **ruleset** es una regla que se aplica a una rama. Creé una para `main` con tres reglas:
+
+- **Restrict deletions:** nadie puede borrar `main`.
+- **Block force pushes:** nadie puede reescribir su historial a la fuerza.
+- **Require a pull request before merging:** todo cambio entra por pull request, con 0 aprobaciones requeridas porque trabajo solo y GitHub no deja aprobar tus propios pull requests.
+
+### La primera sorpresa: el repo era privado
+
+Al crear la regla apareció un aviso: en una cuenta gratuita, **las reglas no se aplican en repositorios privados**. Se pueden crear, pero GitHub no las hace cumplir.
+
+Tenía tres opciones: pagar, irme a otra plataforma o hacer el repo público. El contenido del blog ya es público, así que el código no expone nada nuevo. Y en un repo público, además de las reglas, el escaneo de secretos de GitHub es gratis.
+
+### Antes de publicar el repo: revisar el historial
+
+Al hacer público un repositorio se publica **todo su historial**, no solo la versión actual. Si alguna vez se subió un secreto y luego se borró, sigue ahí en un commit viejo.
+
+Lo revisé con **gitleaks**, un programa que busca contraseñas, tokens y llaves en todo el historial de Git:
+
+```bash
+gitleaks detect -v
+```
+
+```
+INF 13 commits scanned.
+INF no leaks found
+```
+
+Limpio. Recién entonces lo hice público.
+
+### La prueba
+
+Una regla que no se prueba es una suposición. Hice un commit directo en `main` e intenté subirlo:
+
+```
+remote: error: GH013: Repository rule violations found for refs/heads/main.
+remote: - Changes must be made through a pull request.
+ ! [remote rejected] main -> main (push declined due to repository rule violations)
+```
+
+Rechazado. La regla funciona.
+
+## Paso 2: las dos capas de escaneo de secretos de GitHub
+
+GitHub tiene dos protecciones contra secretos, y se configuran en dos lugares distintos:
+
+| Dónde | Qué protege |
+| --- | --- |
+| **Mi cuenta** | A mí: bloquea mis pushes con secretos en cualquier repositorio público. |
+| **El repositorio** | Al repo: revisa todo lo subido, bloquea pushes con secretos de cualquiera y muestra alertas. |
+
+También activé **Dependabot**, que avisa si algún paquete que usa el sitio tiene una vulnerabilidad conocida y abre un pull request con la versión corregida. Como `main` está protegida, esos pull requests también pasan por revisión.
+
+### El límite que hay que conocer
+
+El escaneo de GitHub solo reconoce **formatos de proveedores conocidos**: llaves de AWS, tokens de GitHub, Stripe, Slack, etc. Una contraseña genérica como `password = "MiClave123"` no la detecta.
+
+Por eso el siguiente paso agrega una segunda capa con reglas más amplias. Ninguna herramienta lo atrapa todo; en seguridad se apilan capas que cubren huecos distintos. A eso se le llama **defensa en profundidad**.
+
+## Lo que sigue
+
+El próximo paso es el primero con código: un workflow de GitHub Actions que ejecute gitleaks en cada pull request. Después, la prueba de fuego: subir un token falso a propósito y comprobar que el pull request queda bloqueado.
+
+*Continuará.*
